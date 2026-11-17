@@ -53,18 +53,17 @@ function Show-Message([string]$Text) {
 }
 
 function Open-Client {
-  # 优先用 Chromium 的应用模式打开：独立窗口、没有地址栏，与 WCO 布局一致；
-  # 找不到 Edge/Chrome 时退回默认浏览器
-  $candidates = @(
-    (Join-Path ${env:ProgramFiles(x86)} 'Microsoft\Edge\Application\msedge.exe'),
-    (Join-Path $env:ProgramFiles 'Microsoft\Edge\Application\msedge.exe'),
-    (Join-Path $env:LOCALAPPDATA 'Microsoft\Edge\Application\msedge.exe'),
-    (Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'),
-    (Join-Path ${env:ProgramFiles(x86)} 'Google\Chrome\Application\chrome.exe')
-  ) | Where-Object { $_ -and (Test-Path $_) }
-
-  if ($candidates.Count -gt 0) {
-    Start-Process -FilePath $candidates[0] -ArgumentList "--app=$url"
+  # 优先用 Chromium 的应用模式打开：独立窗口、没有地址栏，与覆盖式标题栏布局一致
+  $roots = @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:LOCALAPPDATA) | Where-Object { $_ }
+  $candidates = @()
+  foreach ($root in $roots) {
+    $candidates += Join-Path $root 'Microsoft\Edge\Application\msedge.exe'
+    $candidates += Join-Path $root 'Google\Chrome\Application\chrome.exe'
+  }
+  # 不按下标取：单元素管道结果会被当成字符串，$x[0] 会变成首字符
+  $exe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+  if ($exe) {
+    Start-Process -FilePath $exe -ArgumentList "--app=$url"
     return
   }
   Start-Process $url
