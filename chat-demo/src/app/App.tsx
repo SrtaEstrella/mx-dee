@@ -71,8 +71,10 @@ const searchScope = useSessionSearch((state) => state.scope)
     const root = document.documentElement.style
     const apply = () => {
       const rect = overlay.visible ? overlay.getTitlebarAreaRect?.() : undefined
-      root.setProperty('--titlebar-height', rect ? `${Math.max(0, Math.round(rect.height))}px` : '0px')
-      root.setProperty('--titlebar-inset-right', '0px')
+      // 窗口控件在标题栏区域的右侧，页面右上角要让出这段宽度
+      const reserved = rect ? Math.max(0, window.innerWidth - Math.round(rect.x + rect.width)) : 0
+      root.setProperty('--wco-controls-width', `${reserved}px`)
+      root.setProperty('--wco-titlebar-height', rect ? `${Math.max(0, Math.round(rect.height))}px` : '0px')
     }
     apply()
     overlay.addEventListener?.('geometrychange', apply)
@@ -116,7 +118,6 @@ const searchScope = useSessionSearch((state) => state.scope)
 
   return (
     <>
-      <div className={styles.titlebar} aria-hidden />
       <div ref={frameRef} className={styles.frame}>
         {isMobile ? <MobileSider /> : siderCollapsed ? null : <Sider />}
         <main className={styles.main}>
