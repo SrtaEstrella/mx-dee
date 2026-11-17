@@ -346,7 +346,7 @@ const stripForOcgo = (body, target) => {
 
 const joinUrl = (base, path) => base.replace(/\/+$/, '') + path
 
-async function pipeUpstream(upstream, res) {
+async function pipeUpstream(upstream, res, { thinkingRequested = false } = {}) {
   const ac = new AbortController()
   res.on('close', () => {
     if (!res.writableEnded) ac.abort()
@@ -367,9 +367,24 @@ async function pipeUpstream(upstream, res) {
     res.end()
     return
   }
+
+  // 深度思考偶发缺失时要能分清是上游没给还是客户端丢了，这里只做统计
+  const decoder = new TextDecoder()
+  let scanned = ''
+  let sawThinking = false
+  const scan = (chunk) => {
+    if (sawThinking) return
+    scanned += decoder.decode(chunk, { stream: true })
+    if (scanned.includes('"type":"thinking"') || scanned.includes('"type": "thinking"')) {
+      sawThinking = true
+    }
+    if (scanned.length > 8192) scanned = scanned.slice(-4096)
+  }
+
   try {
     for await (const chunk of upstream.body) {
       if (res.writableEnded) break
+      scan(chunk)
       if (!res.write(chunk)) {
         await new Promise((r) => res.once('drain', r))
       }
@@ -377,6 +392,9 @@ async function pipeUpstream(upstream, res) {
   } catch (err) {
     if (err?.name !== 'AbortError') log('  上游流中断:', err.message)
   } finally {
+    if (thinkingRequested && !sawThinking && !res.writableEnded) {
+      log('  ⚠ 请求已开深度思考，但上游没有返回思考块')
+    }
     if (!res.writableEnded) res.end()
   }
 }
@@ -547,7 +565,9 @@ async function handleMessages(req, res) {
     return res.end(text)
   }
 
-  await pipeUpstream(upstreamRes, res)
+  await pipeUpstream(upstreamRes, res, {
+    thinkingRequested: body?.thinking?.type === 'enabled',
+  })
 }
 
 /**
