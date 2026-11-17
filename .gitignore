@@ -25,5 +25,3 @@ Thumbs.db
 docs/
 demo/
 
-# 本机专用脚本（不推送）
-local/
