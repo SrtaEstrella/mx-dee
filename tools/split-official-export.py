@@ -15,6 +15,7 @@
     python split-official-export.py --src deepseek_data-YYYY-MM-DD.zip --out demo.zip
     python split-official-export.py --src big.zip --out demo.zip --auto 5
     python split-official-export.py --src big.zip --out demo.zip --pick a9bf61e1 b08c8556
+    python split-official-export.py --src big.zip --out demo.zip --min-turns 3 --no-attachments
 """
 from __future__ import annotations
 
@@ -105,6 +106,8 @@ def main() -> int:
     ap.add_argument("--max-turns", type=int, default=0, help="只保留模型回复条数 <= N 的会话（0 不限）")
     ap.add_argument("--max-json-kb", type=int, default=700, help="单个会话 JSON 上限")
     ap.add_argument("--max-attach-kb", type=int, default=400, help="单个附件上限，超过不打包")
+    ap.add_argument("--no-attachments", action="store_true",
+                    help="剔除全部附件；导入后图片消息只保留文件名")
     ap.add_argument("--list", action="store_true", help="只列出候选，不生成")
     args = ap.parse_args()
 
@@ -160,8 +163,11 @@ def main() -> int:
             print(f"      {','.join(sorted(x for x in c['types'] if x))}")
             kept = [(n, s) for n, s in c["attach"] if s <= args.max_attach_kb * 1024]
             if c["attach"]:
-                print(f"      附件 {len(c['attach'])} 个 → 带入 {len(kept)} 个 "
-                      f"/ {sum(s for _, s in kept)/1024:.0f}KB")
+                if args.no_attachments:
+                    print(f"      附件 {len(c['attach'])} 个 → 全部剔除")
+                else:
+                    print(f"      附件 {len(c['attach'])} 个 → 带入 {len(kept)} 个 "
+                          f"/ {sum(s for _, s in kept)/1024:.0f}KB")
             print()
 
         sel = {c["sid"] for c in chosen}
@@ -177,6 +183,8 @@ def main() -> int:
                 o.writestr(c["name"], c["raw"])
             o.writestr(INDEX, json.dumps(new_index, ensure_ascii=False, separators=(",", ":")))
             for c in chosen:
+                if args.no_attachments:
+                    continue
                 for n, s in c["attach"]:
                     if s <= args.max_attach_kb * 1024:
                         o.writestr(n, z.read(n))
