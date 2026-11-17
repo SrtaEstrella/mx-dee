@@ -242,7 +242,8 @@ export const readSessionIndex: Read<SessionIndexEntry[]> = list((value) => {
   return {
     id: sessionId(item.id),
     title: nullable(string)(item.title),
-    pinned: false,
+    // 置顶是可选字段：缺失按未置顶处理
+    pinned: typeof item.pinned === 'boolean' ? item.pinned : false,
     message_count: count(item.message_count),
     inserted_at: time(item.inserted_at),
     updated_at: time(item.updated_at),
@@ -254,7 +255,7 @@ export const readSessionFile: Read<SessionFile> = (value) => {
   return {
     id: sessionId(item.id),
     title: nullable(string)(item.title),
-    pinned: false,
+    pinned: typeof item.pinned === 'boolean' ? item.pinned : false,
     current_message_id: count(item.current_message_id),
     inserted_at: time(item.inserted_at),
     updated_at: time(item.updated_at),
