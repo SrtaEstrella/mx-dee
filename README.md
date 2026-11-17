@@ -25,6 +25,7 @@ assets/                    图标
 | `scripts\start.sh` | 同上，Git Bash 用 |
 | `scripts\stop.ps1` | 停止网关（只结束命令行含 `server.mjs` 的进程） |
 | `scripts\build.sh` | 构建前端产物 |
+| `scripts\check.sh` | 类型检查 + 构建，改完前端代码后跑一次 |
 | `scripts\make-shortcut.ps1` | 创建桌面 / 开机启动快捷方式（`-Startup`） |
 
 配置见 `.env.local.example`，密钥只存在 `config/providers.json`（不入库）。
