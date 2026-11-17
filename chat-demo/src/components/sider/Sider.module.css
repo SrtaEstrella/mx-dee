@@ -111,29 +111,41 @@
   }
 }
 
-/* 「多选」入口：列表上方的轻量按钮，图标 12px + 文字 */
-.batchEntry {
+/* 「多选」入口：分组标题行右端的图标按钮，悬停才出文字气泡 */
+.sectionActions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  align-self: flex-start;
-  margin: 0 10px 2px;
-  padding: 2px 6px;
+  gap: 2px;
+}
+
+.sectionAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   border: 0;
-  border-radius: 6px;
   background: none;
-  color: var(--dsw-alias-label-tertiary);
-  font: inherit;
-  font-size: 12px;
-  line-height: 18px;
+  color: inherit;
   cursor: pointer;
 }
 
-.batchEntry:hover {
+.sectionAction:hover {
   color: var(--dsw-alias-label-secondary);
 }
 
-/* 多选模式的标题与关闭：标题显示选择计数，右侧圆形关闭按钮 */
+/* 多选模式的标题行：占据「新建对话」的位置 */
+.batchHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-sizing: border-box;
+  height: 40px;
+  margin: 0 10px 8px;
+  padding: 0 0 0 8px;
+}
+
+/* 多选模式的关闭按钮 */
 .batchTitle {
   font-size: 16px;
   font-weight: 500;

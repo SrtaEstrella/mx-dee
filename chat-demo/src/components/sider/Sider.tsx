@@ -21,6 +21,7 @@ import type { SessionSummary } from '../../services/chat/types.js'
 import { Button } from '../base/Button.js'
 import { IconButton } from '../base/IconButton.js'
 import { Modal } from '../base/Modal.js'
+import { Tooltip } from '../base/Tooltip.js'
 import { showToast } from '../base/toastState.js'
 import { openSettings } from '../settings/settingsDialogState.js'
 import { closeMobileSider, useMobileSider } from './mobileSiderState.js'
@@ -122,47 +123,41 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
   return (
     <div className={clsx(styles.sider, mobile && styles.mobile)}>
       <div className={styles.top}>
-        {batch.active ? (
-          <>
-            <div className={clsx(styles.appName, styles.batchTitle)}>
-              {batch.selected.length === 0
-                ? t('sessionBatchSelectChatTitle')
-                : t('sessionBatchSelectedCount', { count: batch.selected.length })}
-            </div>
-            <div className={styles.topActions}>
-              <button
-                type="button"
-                className={styles.batchClose}
-                aria-label={t('sessionBatchSelectCloseButtonAriaLabel')}
-                onClick={batch.stop}
-              >
-                <IconCloseOutline16 />
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className={styles.appName}>{t('appName')}</div>
-            <div className={styles.topActions}>
-              <IconButton
-                size="m"
-                icon={<IconSearchOutline16 />}
-                tooltip={`${t('sessionSearchTip')} ${shortcut}`}
-                tooltipPlacement="bottom"
-                onClick={openSessionSearch}
-              />
-              <IconButton
-                size="m"
-                icon={<IconPanelLeftOutline16 />}
-                tooltip={t('collapseSiderbarButton')}
-                tooltipPlacement="bottom"
-                onClick={() => (mobile ? closeMobileSider() : setSiderCollapsed(true))}
-              />
-            </div>
-          </>
-        )}
+        <div className={styles.appName}>{t('appName')}</div>
+        <div className={styles.topActions}>
+          <IconButton
+            size="m"
+            icon={<IconSearchOutline16 />}
+            tooltip={`${t('sessionSearchTip')} ${shortcut}`}
+            tooltipPlacement="bottom"
+            onClick={openSessionSearch}
+          />
+          <IconButton
+            size="m"
+            icon={<IconPanelLeftOutline16 />}
+            tooltip={t('collapseSiderbarButton')}
+            tooltipPlacement="bottom"
+            onClick={() => (mobile ? closeMobileSider() : setSiderCollapsed(true))}
+          />
+        </div>
       </div>
-      {batch.active ? null : (
+      {batch.active ? (
+        <div className={styles.batchHeader}>
+          <span className={styles.batchTitle}>
+            {batch.selected.length === 0
+              ? t('sessionBatchSelectChatTitle')
+              : t('sessionBatchSelectedCount', { count: batch.selected.length })}
+          </span>
+          <button
+            type="button"
+            className={styles.batchClose}
+            aria-label={t('sessionBatchSelectCloseButtonAriaLabel')}
+            onClick={batch.stop}
+          >
+            <IconCloseOutline16 />
+          </button>
+        </div>
+      ) : (
         <button
           type="button"
           className={styles.newChat}
@@ -177,37 +172,47 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
           {t('newChat')}
         </button>
       )}
-      {batch.active ? null : (
-        <button type="button" className={styles.batchEntry} onClick={() => batch.start()}>
-          <IconMultiSelectOutline16 size={12} />
-          <span>{t('sessionBatchEntryButton')}</span>
-        </button>
-      )}
       <div className={styles.listWrap}>
         <div className={styles.list}>
-          {groups.map((group) => {
+          {groups.map((group, groupIndex) => {
             // 与官方一致：置顶超过 10 个才出现折叠控件，否则只有标题
             const collapsible = group.key === 'pinned' && group.sessions.length > PINNED_FOLD_THRESHOLD
             const collapsed = collapsible && pinnedCollapsed
             return (
               <div key={group.key} className={styles.section}>
                 <div className={styles.sectionHeader}>
-                  {collapsed ? t('pinNCountChats', { count: group.sessions.length }) : group.label}
-                  {collapsible ? (
-                    <button
-                      type="button"
-                      className={styles.sectionToggle}
-                      aria-label={
-                        collapsed
-                          ? t('sessionPinnedSectionExpandTooltip')
-                          : t('sessionPinnedSectionCollapseTooltip')
-                      }
-                      aria-expanded={!collapsed}
-                      onClick={() => setPinnedCollapsed(!pinnedCollapsed)}
-                    >
-                      {collapsed ? <IconChevronRightOutline14 /> : <IconChevronDownOutline14 />}
-                    </button>
-                  ) : null}
+                  <span>
+                    {collapsed ? t('pinNCountChats', { count: group.sessions.length }) : group.label}
+                  </span>
+                  <span className={styles.sectionActions}>
+                    {collapsible ? (
+                      <button
+                        type="button"
+                        className={styles.sectionToggle}
+                        aria-label={
+                          collapsed
+                            ? t('sessionPinnedSectionExpandTooltip')
+                            : t('sessionPinnedSectionCollapseTooltip')
+                        }
+                        aria-expanded={!collapsed}
+                        onClick={() => setPinnedCollapsed(!pinnedCollapsed)}
+                      >
+                        {collapsed ? <IconChevronRightOutline14 /> : <IconChevronDownOutline14 />}
+                      </button>
+                    ) : null}
+                    {batch.active || groupIndex > 0 ? null : (
+                      <Tooltip content={t('sessionBatchEntryButton')} placement="bottom">
+                        <button
+                          type="button"
+                          className={styles.sectionAction}
+                          aria-label={t('sessionBatchEntryButton')}
+                          onClick={() => batch.start()}
+                        >
+                          <IconMultiSelectOutline16 size={14} />
+                        </button>
+                      </Tooltip>
+                    )}
+                  </span>
                 </div>
                 {collapsed
                   ? null
