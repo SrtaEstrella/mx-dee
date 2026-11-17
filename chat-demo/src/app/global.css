@@ -1,6 +1,8 @@
 :root {
   --message-list-max-width: 840px;
   --message-list-padding-horizontal: 44px;
+  /* 应用模式下窗口控件占据的顶部高度；非应用模式为 0 */
+  --titlebar-height: env(titlebar-area-height, 0px);
 }
 
 @media (max-width: 1023px) {

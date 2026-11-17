@@ -1,9 +1,22 @@
+/* 应用模式（window-controls-overlay）下窗口控件压在页面顶部，内容整体让到标题栏下方 */
 .frame {
   position: absolute;
-  inset: 0;
+  inset: var(--titlebar-height, 0px) 0 0 0;
   display: flex;
   overflow: hidden;
   background-color: var(--dsw-alias-bg-base);
+}
+
+/* 让出来的这条留作窗口拖拽区 */
+.titlebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--titlebar-height, 0px);
+  app-region: drag;
+  -webkit-app-region: drag;
+  z-index: 100;
 }
 
 .main {

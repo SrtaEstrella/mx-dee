@@ -55,6 +55,34 @@ const searchScope = useSessionSearch((state) => state.scope)
 
   usePreventPageScroll(isMobile)
 
+  // 应用模式下窗口控件覆盖在页面顶部：把标题栏高度写进 CSS 变量，内容整体让开
+  useEffect(() => {
+    const overlay = (navigator as Navigator & {
+      windowControlsOverlay?: {
+        visible: boolean
+        getTitlebarAreaRect?: () => DOMRect
+        addEventListener?: (type: string, listener: () => void) => void
+        removeEventListener?: (type: string, listener: () => void) => void
+      }
+    }).windowControlsOverlay
+    if (!overlay) {
+      return
+    }
+    const root = document.documentElement.style
+    const apply = () => {
+      const rect = overlay.visible ? overlay.getTitlebarAreaRect?.() : undefined
+      root.setProperty('--titlebar-height', rect ? `${Math.max(0, Math.round(rect.height))}px` : '0px')
+      root.setProperty('--titlebar-inset-right', '0px')
+    }
+    apply()
+    overlay.addEventListener?.('geometrychange', apply)
+    window.addEventListener('resize', apply)
+    return () => {
+      overlay.removeEventListener?.('geometrychange', apply)
+      window.removeEventListener('resize', apply)
+    }
+  }, [])
+
   useEffect(() => {
     document.documentElement.lang = locale
   }, [locale])
@@ -88,6 +116,7 @@ const searchScope = useSessionSearch((state) => state.scope)
 
   return (
     <>
+      <div className={styles.titlebar} aria-hidden />
       <div ref={frameRef} className={styles.frame}>
         {isMobile ? <MobileSider /> : siderCollapsed ? null : <Sider />}
         <main className={styles.main}>
