@@ -4,15 +4,16 @@
 #             after logon and the installed PWA opens instantly.
 #
 # Usage:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File tools\make-shortcut.ps1
-#   powershell ... -File tools\make-shortcut.ps1 -Startup
+#   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\make-shortcut.ps1
+#   powershell ... -File scripts\make-shortcut.ps1 -Startup
 
 param([switch]$Startup)
 
 $ErrorActionPreference = 'Stop'
 
+# 脚本位于 scripts\，项目根目录是它的上一级
 $root = Split-Path -Parent $PSScriptRoot
-$target = Join-Path $root 'DS-Chat.vbs'
+$target = Join-Path $PSScriptRoot 'DS-Chat.vbs'
 $icon = Join-Path $root 'assets\ds-chat.ico'
 
 if (-not (Test-Path $target)) { throw "Missing $target" }

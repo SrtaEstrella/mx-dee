@@ -5,13 +5,15 @@
 # DSH 内启动的 shell 不继承密钥变量，那种环境下用 start.ps1。
 #
 # 用法：
-#   ./start.sh                 # 默认 127.0.0.1:8090
-#   ./start.sh --port 8317
-#   ./start.sh --route ocgo
+#   ./scripts/start.sh                 # 默认 127.0.0.1:8090
+#   ./scripts/start.sh --port 8317
+#   ./scripts/start.sh --route ocgo
 
 set -uo pipefail
+# 脚本位于 scripts/，项目根目录是它的上一级
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$here" || exit 1
+root="$(cd "$here/.." && pwd)"
+cd "$root" || exit 1
 
 missing=0
 for name in DEEPSEEK_API_KEY OCGO_API_KEY; do
@@ -25,11 +27,11 @@ for name in DEEPSEEK_API_KEY OCGO_API_KEY; do
 done
 
 if [ ! -d "chat-demo/dist" ]; then
-  echo "找不到 chat-demo/dist，请先执行: bash build.sh" >&2
+  echo "找不到 chat-demo/dist，请先执行: bash scripts/build.sh" >&2
   exit 1
 fi
 
-[ "$missing" -eq 1 ] && echo "提示：DSH 内的 shell 会过滤密钥，请改用 PowerShell 运行 start.ps1" >&2
+[ "$missing" -eq 1 ] && echo "提示：DSH 内的 shell 会过滤密钥，请改用 PowerShell 运行 scripts/start.ps1" >&2
 
 echo
 exec node server.mjs "$@"

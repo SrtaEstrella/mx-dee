@@ -8,10 +8,10 @@
 # PowerShell, which corrupts non-ASCII string literals.
 #
 # Usage:
-#   .\start.ps1                  # 127.0.0.1:8090
-#   .\start.ps1 -Port 8317
-#   .\start.ps1 -Route ocgo      # force everything to OpenCode Go
-#   .\start.ps1 -Route official  # force everything to the official API
+#   .\scripts\start.ps1                  # 127.0.0.1:8090
+#   .\scripts\start.ps1 -Port 8317
+#   .\scripts\start.ps1 -Route ocgo      # force everything to OpenCode Go
+#   .\scripts\start.ps1 -Route official  # force everything to the official API
 
 param(
   [int]$Port = 8090,
@@ -20,7 +20,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-Set-Location $PSScriptRoot
+# 脚本位于 scripts\，切到项目根目录再启动
+Set-Location (Split-Path -Parent $PSScriptRoot)
 
 function Resolve-Key([string]$Name) {
   $v = [Environment]::GetEnvironmentVariable($Name, 'Process')
@@ -39,9 +40,9 @@ foreach ($name in @('DEEPSEEK_API_KEY', 'OCGO_API_KEY')) {
   }
 }
 
-if (-not (Test-Path (Join-Path $PSScriptRoot $Root))) {
+if (-not (Test-Path $Root)) {
   Write-Host ("Build output not found: {0}" -f $Root) -ForegroundColor Red
-  Write-Host "Run first:  bash build.sh" -ForegroundColor Red
+  Write-Host "Run first:  bash scripts/build.sh" -ForegroundColor Red
   exit 1
 }
 

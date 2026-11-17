@@ -4,9 +4,9 @@
 # ASCII only: Windows PowerShell parses .ps1 files without a UTF-8 BOM as ANSI.
 #
 # Usage:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File launch.ps1
-#   powershell ... -File launch.ps1 -Port 8317
-#   powershell ... -File launch.ps1 -NoBrowser     # start only
+#   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\launch.ps1
+#   powershell ... -File scripts\launch.ps1 -Port 8317
+#   powershell ... -File scripts\launch.ps1 -NoBrowser     # start only
 
 param(
   [int]$Port = 8090,
@@ -15,7 +15,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$root = $PSScriptRoot
+# 脚本位于 scripts\，项目根目录是它的上一级
+$root = Split-Path -Parent $PSScriptRoot
 $url = "http://127.0.0.1:$Port/"
 $logDir = Join-Path $root 'logs'
 $logOut = Join-Path $logDir 'gateway.log'
@@ -56,7 +57,7 @@ function Start-Gateway {
 
   $distIndex = Join-Path $root 'chat-demo\dist\index.html'
   if (-not (Test-Path $distIndex)) {
-    Show-Message "Build output not found:`n$distIndex`n`nRun this first:`n  bash build.sh"
+    Show-Message "Build output not found:`n$distIndex`n`nRun this first:`n  bash scripts/build.sh"
     return $false
   }
 
