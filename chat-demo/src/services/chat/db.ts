@@ -258,6 +258,62 @@ export const commitStaging = async (): Promise<SessionSummary[]> => {
   return summaries
 }
 
+/**
+ * 合并导入：保留已有会话，只写入本地没有的会话与其原件。
+ * 同一事务内完成，失败整体回滚；返回新增、跳过数量与新增摘要。
+ */
+export const mergeStaging = async (): Promise<{
+  added: number
+  skipped: number
+  summaries: SessionSummary[]
+}> => {
+  const summaries: SessionSummary[] = []
+  let skipped = 0
+  const tx = (await getDB()).transaction(
+    ['sessions', 'sessionSummaries', 'files', 'sessionsStaging', 'filesStaging'],
+    'readwrite'
+  )
+  try {
+    const sessions = tx.objectStore('sessions')
+    const sessionSummaries = tx.objectStore('sessionSummaries')
+    const files = tx.objectStore('files')
+
+    for (
+      let cursor = await tx.objectStore('sessionsStaging').openCursor();
+      cursor;
+      cursor = await cursor.continue()
+    ) {
+      const session = cursor.value as Session
+      // 同一 id 视为同一条会话，保留本地已有的那份
+      if ((await sessions.getKey(session.id)) !== undefined) {
+        skipped += 1
+        continue
+      }
+      await sessions.put(session)
+      const summary = storedSummary(session)
+      await sessionSummaries.put(summary)
+      summaries.push(toSessionSummary(summary))
+    }
+
+    for (
+      let cursor = await tx.objectStore('filesStaging').openCursor();
+      cursor;
+      cursor = await cursor.continue()
+    ) {
+      // 原件按 id 存放，重复写入等价于同一张图
+      await files.put(cursor.value)
+    }
+
+    await tx.objectStore('sessionsStaging').clear()
+    await tx.objectStore('filesStaging').clear()
+  } catch (error) {
+    abortTransaction(tx)
+    throw error
+  }
+  await tx.done
+  return { added: summaries.length, skipped, summaries }
+}
+
 /** 本地存储失败不打断对话，只在控制台留痕 */
 export const reportStorageError = (action: string) => (error: unknown) => {
   // eslint-disable-next-line no-console

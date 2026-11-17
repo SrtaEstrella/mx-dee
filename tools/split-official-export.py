@@ -47,8 +47,18 @@ def describe(z: zipfile.ZipFile, name: str, infos: dict) -> dict:
     return {
         "sid": sid, "name": name, "data": data, "raw": raw,
         "messages": len(msgs), "types": types,
+        # 轮次按模型回复条数计
+        "turns": sum(1 for m in msgs if m.get("role") == "ASSISTANT"),
         "json_kb": len(raw) / 1024, "attach": attach,
     }
+
+
+def passes_turn_filter(info: dict, args: argparse.Namespace) -> bool:
+    if info["turns"] < args.min_turns:
+        return False
+    if args.max_turns and info["turns"] > args.max_turns:
+        return False
+    return True
 
 
 def score(info: dict) -> int:
@@ -79,6 +89,8 @@ def main() -> int:
     ap.add_argument("--out", required=True, help="输出的 demo ZIP")
     ap.add_argument("--pick", nargs="*", help="指定会话 id 前缀（不指定则自动挑选）")
     ap.add_argument("--auto", type=int, default=5, help="自动挑选的会话数，默认 5")
+    ap.add_argument("--min-turns", type=int, default=0, help="只保留模型回复条数 >= N 的会话")
+    ap.add_argument("--max-turns", type=int, default=0, help="只保留模型回复条数 <= N 的会话（0 不限）")
     ap.add_argument("--max-json-kb", type=int, default=700, help="单个会话 JSON 上限")
     ap.add_argument("--max-attach-kb", type=int, default=400, help="单个附件上限，超过不打包")
     ap.add_argument("--list", action="store_true", help="只列出候选，不生成")
@@ -101,25 +113,38 @@ def main() -> int:
                 if not name:
                     print(f"⚠ 未找到会话 {p}，跳过")
                     continue
-                chosen.append(describe(z, name, infos))
+                info = describe(z, name, infos)
+                if not passes_turn_filter(info, args):
+                    print(f"⚠ 会话 {p[:8]} 轮次 {info['turns']} 不满足筛选条件，跳过")
+                    continue
+                chosen.append(info)
         else:
             cands = []
+            skipped_turns = 0
             for prefix, name in sessions.items():
                 if infos[name].file_size > args.max_json_kb * 1024:
                     continue
-                cands.append(describe(z, name, infos))
+                info = describe(z, name, infos)
+                if not passes_turn_filter(info, args):
+                    skipped_turns += 1
+                    continue
+                cands.append(info)
+            if skipped_turns:
+                print(f"轮次筛选排除 {skipped_turns} 个会话")
             cands.sort(key=score, reverse=True)
             chosen = cands[: args.auto]
 
         if args.list:
             for c in sorted(chosen, key=score, reverse=True):
-                print(f"{c['sid'][:8]}  {c['messages']:3d} 条  {c['json_kb']:7.1f}KB  {c['data'].get('title')}")
+                print(f"{c['sid'][:8]}  {c['turns']:3d} 轮 / {c['messages']:3d} 条  "
+                      f"{c['json_kb']:7.1f}KB  {c['data'].get('title')}")
                 print(f"          {','.join(sorted(x for x in c['types'] if x))}")
             return 0
 
         print(f"选中 {len(chosen)} 个会话:\n")
         for c in chosen:
-            print(f"  {c['sid'][:8]}  {c['messages']:3d} 条  {c['json_kb']:7.1f}KB  {c['data'].get('title')}")
+            print(f"  {c['sid'][:8]}  {c['turns']:3d} 轮 / {c['messages']:3d} 条  "
+                  f"{c['json_kb']:7.1f}KB  {c['data'].get('title')}")
             print(f"      {','.join(sorted(x for x in c['types'] if x))}")
             kept = [(n, s) for n, s in c["attach"] if s <= args.max_attach_kb * 1024]
             if c["attach"]:

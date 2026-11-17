@@ -412,6 +412,22 @@
   padding-bottom: 24px;
 }
 
+.importMerge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+}
+
+.importMerge input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--dsw-alias-brand-primary);
+  cursor: pointer;
+}
+
 .importConfirmText {
   color: var(--dsw-alias-label-primary);
 }

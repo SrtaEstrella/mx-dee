@@ -331,11 +331,22 @@ const ImportConfirm = ({
           </Button>
           <Button variant="dangerOutlined" size="m" onClick={() => void historyImport.confirm()}>
             {t('historyImportConfirm')}
-          </Button>
-        </>
+          </Button>        </>
       }
     >
-      <div className={styles.importConfirmText}>{t('historyImportConfirmDescription')}</div>
+      <label className={styles.importMerge}>
+        <input
+          type="checkbox"
+          checked={historyImport.merge}
+          onChange={(event) => historyImport.setMerge(event.target.checked)}
+        />
+        <span>{t('historyImportMerge')}</span>
+      </label>
+      <div className={styles.importConfirmText}>
+        {historyImport.merge
+          ? t('historyImportMergeDescription')
+          : t('historyImportConfirmDescription')}
+      </div>
     </Modal>
   )
 }
@@ -438,6 +449,7 @@ const SettingCell = ({
 const useHistoryImport = () => {
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
+  const [merge, setMerge] = useState(true)
   const [status, setStatus] = useState<Status>(null)
   const importing = useRef(false)
 
@@ -450,7 +462,7 @@ const useHistoryImport = () => {
     setBusy(true)
     setStatus(null)
     try {
-      const count = await importHistory(file)
+      const count = await importHistory(file, merge ? 'merge' : 'replace')
       setStatus({ key: count === 1 ? 'historyImportedOne' : 'historyImported', params: { count } })
     } catch {
       setStatus({ key: 'historyImportFailed', error: true })
@@ -460,7 +472,7 @@ const useHistoryImport = () => {
     }
   }
 
-  return { file, busy, status, select: setFile, cancel: () => setFile(null), confirm }
+  return { file, busy, status, merge, setMerge, select: setFile, cancel: () => setFile(null), confirm }
 }
 
 /** 导入 = 覆盖：用选中文件替换本地全部会话与附件。 */

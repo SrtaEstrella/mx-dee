@@ -388,9 +388,13 @@ const waitForIdle = (sessionId?: string) =>
 
 /**
  * 替换历史对话：先写入暂存，成功后原子替换旧记录；写入为空即删除全部会话与附件。
+ * mode 为 merge 时保留已有会话，只补入本地没有的那些。
  * 期间停止生成并禁止修改会话；失败时清除暂存，保留原有记录。
  */
-export const replaceHistory = async (write: () => Promise<void>): Promise<number> => {
+export const replaceHistory = async (
+  write: () => Promise<void>,
+  mode: 'replace' | 'merge' = 'replace'
+): Promise<number> => {
   if (get().importingHistory) {
     throw new Error('History replacement is already in progress')
   }
@@ -407,12 +411,28 @@ export const replaceHistory = async (write: () => Promise<void>): Promise<number
     await waitForIdle()
     await db.clearStaging()
     let summaries: SessionSummary[]
+    let added = 0
     try {
       await write()
-      summaries = await db.commitStaging()
+      if (mode === 'merge') {
+        const merged = await db.mergeStaging()
+        added = merged.added
+        summaries = merged.summaries
+      } else {
+        summaries = await db.commitStaging()
+      }
     } catch (error) {
       await db.clearStaging().catch(db.reportStorageError('clear unfinished history replacement'))
       throw error
+    }
+    if (mode === 'merge') {
+      // 合并只追加：草稿、附件与当前会话都保留
+      set((state) => ({
+        ready: true,
+        initError: false,
+        sessions: sortSessions([...state.sessions, ...summaries]),
+      }))
+      return added
     }
     sessionAccess.clear()
     unsavedSessions.clear()
