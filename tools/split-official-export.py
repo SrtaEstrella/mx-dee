@@ -20,12 +20,23 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import zipfile
 from pathlib import Path
 
 MANIFEST = "manifest.json"
 INDEX = "chat_session_index.json"
 VERSION = 3
+
+
+def safe_stdout() -> None:
+    """会话标题可能含当前控制台编码无法表示的字符（如天城文），不能因此中断。
+    无法编码的字符按替换符输出。"""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
+            pass
 
 
 def list_sessions(z: zipfile.ZipFile) -> dict[str, str]:
@@ -84,6 +95,7 @@ def score(info: dict) -> int:
 
 
 def main() -> int:
+    safe_stdout()
     ap = argparse.ArgumentParser(description="裁剪 DeepSeek 官方导出 ZIP")
     ap.add_argument("--src", required=True, help="官方导出的大 ZIP")
     ap.add_argument("--out", required=True, help="输出的 demo ZIP")
