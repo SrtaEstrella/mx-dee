@@ -81,10 +81,32 @@
 }
 
 .itemIcon {
+  position: relative;
   display: inline-flex;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   margin-top: 1px;
+  border-radius: 50%;
+  background-color: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-tertiary);
+}
+
+/* 用户消息在图标右下角叠一个小人角标，与官方一致 */
+.itemUserBadge {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .itemMain {

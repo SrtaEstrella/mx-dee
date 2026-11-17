@@ -3,7 +3,12 @@ import { createPortal } from 'react-dom'
 import { useTranslate } from '../../i18n/index.js'
 import { searchSessions, type SessionSearchHit } from '../../services/chat/search.js'
 import { selectMessageVersion, selectSession } from '../../services/chat/store.js'
-import { IconCloseOutline16, IconSearchOutline16 } from '../base/icons.js'
+import {
+  IconCloseOutline16,
+  IconMessageOutline20,
+  IconSearchOutline16,
+  IconUserSolid10,
+} from '../base/icons.js'
 import { IconButton } from '../base/IconButton.js'
 import { showToast } from '../base/toastState.js'
 import { useMessageWindow } from '../messages/messageWindow.js'
@@ -246,7 +251,12 @@ export const SessionSearch = ({ open, scope = null }: { open: boolean; scope?: s
                 onClick={() => openHit(hit)}
               >
                 <span className={styles.itemIcon}>
-                  <IconSearchOutline16 />
+                  <IconMessageOutline20 />
+                  {hit.role === 'user' ? (
+                    <span className={styles.itemUserBadge}>
+                      <IconUserSolid10 />
+                    </span>
+                  ) : null}
                 </span>
                 <span className={styles.itemMain}>
                   {scope ? null : (
