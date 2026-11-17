@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { useTranslate } from '../i18n/index.js'
 import { applyLayoutSettings, useSettings } from '../services/settings.js'
+import { ensureGlobalChoice, resolveChoice } from '../services/modelChoice.js'
+import { fetchProviders } from '../services/providers.js'
 import { useIsMobile, useMobileViewport, usePreventPageScroll } from './viewport.js'
 import {
   bindChatPersistence,
@@ -89,6 +91,16 @@ const searchScope = useSessionSearch((state) => state.scope)
 
   // 宽度与字号是用户偏好，启动时套用一次
   useEffect(() => applyLayoutSettings(), [])
+
+  // 首次使用时落一个显式服务商，之后每个请求都带 provider，不再依赖网关隐式路由
+  useEffect(() => {
+    if (resolveChoice(null)) {
+      return
+    }
+    void fetchProviders()
+      .then((list) => ensureGlobalChoice(list))
+      .catch(() => {})
+  }, [])
 
   // 文件数、存储空间达到上限时，附件上只显示「上传失败」，原因用 toast 说明
   useEffect(() => onUploadNotice(showToast), [])

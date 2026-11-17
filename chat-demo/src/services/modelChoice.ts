@@ -77,6 +77,26 @@ export const resolveChoice = (sessionId: string | null): ModelChoice | null => {
   return state.global
 }
 
+/**
+ * 首次使用时把默认服务商写成显式选择，避免「没选过」导致请求不带 provider、
+ * 由网关隐式路由。规则与网关兜底一致：优先有密钥的 OCGO，其次第一个有密钥的。
+ */
+export const ensureGlobalChoice = (
+  providers: { id: string; platform: string; defaultModel: string; hasKey: boolean }[]
+): ModelChoice | null => {
+  if (useModelChoice.getState().global) {
+    return useModelChoice.getState().global
+  }
+  const usable = providers.filter((provider) => provider.hasKey && provider.defaultModel)
+  const picked = usable.find((provider) => provider.platform === 'ocgo') ?? usable[0]
+  if (!picked) {
+    return null
+  }
+  const choice = { providerId: picked.id, model: picked.defaultModel }
+  useModelChoice.getState().setGlobal(choice)
+  return choice
+}
+
 /** 当前会话是否有独立设置 */
 export const hasSessionChoice = (sessionId: string | null): boolean =>
   !!(sessionId && useModelChoice.getState().sessions[sessionId])

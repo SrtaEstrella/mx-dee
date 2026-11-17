@@ -18,7 +18,7 @@ $ErrorActionPreference = 'Stop'
 # 脚本位于 scripts\，项目根目录是它的上一级
 $root = Split-Path -Parent $PSScriptRoot
 
-# config/app.json 里的端口与「启动时打开浏览器」是界面可改的默认值，命令行参数优先
+# config/app.json 里的端口是界面可改的默认值，命令行参数优先
 $appConfig = $null
 try {
   $appConfig = Get-Content (Join-Path $root 'config\app.json') -Raw -ErrorAction Stop | ConvertFrom-Json
@@ -27,13 +27,6 @@ try {
 }
 if ($Port -le 0) {
   $Port = if ($appConfig -and $appConfig.port) { [int]$appConfig.port } else { 8090 }
-}
-$openBrowser = if ($PSBoundParameters.ContainsKey('NoBrowser')) {
-  -not $NoBrowser
-} elseif ($appConfig -and $appConfig.openBrowser -eq $false) {
-  $false
-} else {
-  $true
 }
 
 $url = "http://127.0.0.1:$Port/"
@@ -57,6 +50,24 @@ function Show-Message([string]$Text) {
   } catch {
     Write-Host $Text
   }
+}
+
+function Open-Client {
+  # 优先用 Chromium 的应用模式打开：独立窗口、没有地址栏，与 WCO 布局一致；
+  # 找不到 Edge/Chrome 时退回默认浏览器
+  $candidates = @(
+    (Join-Path ${env:ProgramFiles(x86)} 'Microsoft\Edge\Application\msedge.exe'),
+    (Join-Path $env:ProgramFiles 'Microsoft\Edge\Application\msedge.exe'),
+    (Join-Path $env:LOCALAPPDATA 'Microsoft\Edge\Application\msedge.exe'),
+    (Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'),
+    (Join-Path ${env:ProgramFiles(x86)} 'Google\Chrome\Application\chrome.exe')
+  ) | Where-Object { $_ -and (Test-Path $_) }
+
+  if ($candidates.Count -gt 0) {
+    Start-Process -FilePath $candidates[0] -ArgumentList "--app=$url"
+    return
+  }
+  Start-Process $url
 }
 
 function Test-Gateway {
@@ -120,7 +131,7 @@ function Start-Gateway {
 
 try {
   if (Start-Gateway) {
-    if ($openBrowser) { Start-Process $url }
+    if (-not $NoBrowser) { Open-Client }
     exit 0
   }
   exit 1

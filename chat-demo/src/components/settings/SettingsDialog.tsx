@@ -275,7 +275,7 @@ const LocationSetting = () => {
   )
 }
 
-/** 网关端口与启动行为：写入 config/app.json，端口改动需重启网关 */
+/** 网关端口；启动时是否打开浏览器沿用默认行为 */
 const GatewaySetting = () => {
   const t = useTranslate()
   const settings = useAppSettings((state) => state.settings)
@@ -283,11 +283,11 @@ const GatewaySetting = () => {
   useEffect(() => {
     void loadAppSettings()
   }, [])
-  const save = async (next: { port?: number; openBrowser?: boolean }) => {
+  const save = async (port: number) => {
     if (!settings) {
       return
     }
-    const required = await saveAppSettings({ ...settings, ...next })
+    const required = await saveAppSettings({ ...settings, port })
     if (required === null) {
       showToast({ key: 'gatewaySettingSaveFailed', type: 'error' })
       return
@@ -300,26 +300,16 @@ const GatewaySetting = () => {
       description={restart ? t('settingsGatewayRestartHint') : t('settingsGatewayPortHint')}
       status={null}
       action={
-        <div className={styles.gatewayActions}>
-          <input
-            type="number"
-            className={styles.importNumber}
-            min={1024}
-            max={65535}
-            step={1}
-            value={settings?.port ?? ''}
-            aria-label={t('settingsGatewayPort')}
-            onChange={(event) => void save({ port: Number(event.target.value) || 8090 })}
-          />
-          <label className={styles.importMerge}>
-            <input
-              type="checkbox"
-              checked={settings?.openBrowser ?? true}
-              onChange={(event) => void save({ openBrowser: event.target.checked })}
-            />
-            <span>{t('settingsGatewayOpenBrowser')}</span>
-          </label>
-        </div>
+        <input
+          type="number"
+          className={styles.importNumber}
+          min={1024}
+          max={65535}
+          step={1}
+          value={settings?.port ?? ''}
+          aria-label={t('settingsGatewayPort')}
+          onChange={(event) => void save(Number(event.target.value) || 8090)}
+        />
       }
     />
   )
@@ -336,7 +326,6 @@ const CustomInstructionsSetting = () => {
         className={styles.customInstructionsInput}
         value={value}
         rows={4}
-        placeholder={t('settingsCustomInstructionsPlaceholder')}
         aria-label={t('settingsCustomInstructions')}
         onChange={(event) => setCustomInstructions(event.target.value)}
       />
@@ -345,33 +334,44 @@ const CustomInstructionsSetting = () => {
   )
 }
 
-/** 消息区宽度：0 表示跟随默认值 */
+/** 消息区宽度：固定几档，前台只给描述 */
+const WIDTH_OPTIONS = [
+  { value: 0, label: 'settingsWidthStandard' },
+  { value: 680, label: 'settingsWidthNarrow' },
+  { value: 1000, label: 'settingsWidthWide' },
+  { value: 1240, label: 'settingsWidthWidest' },
+] as const
+
 const MessageWidthSetting = () => {
   const t = useTranslate()
   const width = useSettings((state) => state.messageWidth)
   return (
     <SettingCell
       label={t('settingsMessageWidth')}
-      description={t('settingsMessageWidthHint')}
       status={null}
       action={
-        <input
-          type="number"
-          className={styles.importNumber}
-          min={480}
-          max={1600}
-          step={20}
-          value={width || ''}
-          placeholder={t('settingsMessageWidthAuto')}
-          aria-label={t('settingsMessageWidth')}
-          onChange={(event) => setMessageWidth(Number(event.target.value) || 0)}
+        <Select
+          ariaLabel={t('settingsMessageWidth')}
+          value={String(width)}
+          options={WIDTH_OPTIONS.map((option) => ({
+            value: String(option.value),
+            label: t(option.label),
+          }))}
+          onChange={(value) => setMessageWidth(Number(value))}
         />
       }
     />
   )
 }
 
-/** 正文字号 */
+/** 正文字号：固定几档 */
+const FONT_OPTIONS = [
+  { value: 13, label: 'settingsFontSmall' },
+  { value: 14, label: 'settingsFontStandard' },
+  { value: 16, label: 'settingsFontLarge' },
+  { value: 18, label: 'settingsFontLarger' },
+] as const
+
 const MessageFontSizeSetting = () => {
   const t = useTranslate()
   const size = useSettings((state) => state.messageFontSize)
@@ -380,15 +380,14 @@ const MessageFontSizeSetting = () => {
       label={t('settingsMessageFontSize')}
       status={null}
       action={
-        <input
-          type="number"
-          className={styles.importNumber}
-          min={12}
-          max={20}
-          step={1}
-          value={size}
-          aria-label={t('settingsMessageFontSize')}
-          onChange={(event) => setMessageFontSize(Number(event.target.value) || 14)}
+        <Select
+          ariaLabel={t('settingsMessageFontSize')}
+          value={String(size)}
+          options={FONT_OPTIONS.map((option) => ({
+            value: String(option.value),
+            label: t(option.label),
+          }))}
+          onChange={(value) => setMessageFontSize(Number(value))}
         />
       }
     />
