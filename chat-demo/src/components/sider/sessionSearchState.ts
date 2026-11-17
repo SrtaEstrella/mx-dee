@@ -1,9 +1,12 @@
 import { create } from 'zustand'
 
-type SessionSearchState = { open: boolean }
+/** 搜索范围：null 为全部会话，会话 id 为对话内搜索 */
+type SessionSearchState = { open: boolean; scope: string | null }
 
-export const useSessionSearch = create<SessionSearchState>(() => ({ open: false }))
+export const useSessionSearch = create<SessionSearchState>(() => ({ open: false, scope: null }))
 
-export const openSessionSearch = () => useSessionSearch.setState({ open: true })
+export const openSessionSearch = (scope?: string) =>
+  useSessionSearch.setState({ open: true, scope: scope ?? null })
 
-export const closeSessionSearch = () => useSessionSearch.setState({ open: false })
+export const closeSessionSearch = () =>
+  useSessionSearch.setState({ open: false, scope: null })

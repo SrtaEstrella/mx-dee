@@ -34,6 +34,7 @@ export const App = () => {
   // 移动端侧边栏以独立抽屉管理开合状态
   const siderCollapsed = useSettings((state) => state.siderCollapsed) && !isMobile
   const searchOpen = useSessionSearch((state) => state.open)
+const searchScope = useSessionSearch((state) => state.scope)
   const ready = useChatStore((state) => state.ready)
   const initError = useChatStore((state) => state.initError)
   const saveError = useChatStore((state) => Object.values(state.sessionSaveErrors).some(Boolean))
@@ -145,7 +146,7 @@ export const App = () => {
         <SearchPanel />
       </div>
       {/* 会话搜索在侧栏展开与收起两种形态下都要可用，因此挂在应用层 */}
-      <SessionSearch open={searchOpen} />
+      <SessionSearch open={searchOpen} scope={searchScope} />
       <SettingsDialog />
       <Toast />
     </>

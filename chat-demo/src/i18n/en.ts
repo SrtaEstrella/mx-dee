@@ -80,6 +80,8 @@ export const en = {
   sessionBatchPinSuccessToast: 'Pinned {count} chats',
   sessionBatchUnpinSuccessToast: 'Unpinned {count} chats',
   sessionBatchSelectCloseButtonAriaLabel: 'Close',
+  conversationSearchButton: 'Search this chat',
+  conversationSearchPlaceholder: 'Search in this chat...',
   more: 'More',
   close: 'Close',
   sessionHistoryTimelineLabelToday: 'Today',

@@ -1,4 +1,4 @@
-import { loadSessionSummaries, scanSessions } from './db.js'
+import { loadSession, loadSessionSummaries, scanSessions } from './db.js'
 import type { AssistantMessage, Message } from './types.js'
 
 /** 一条会话搜索命中：定位到会话，并带一段可高亮的上下文 */
@@ -68,7 +68,7 @@ const buildSnippet = (text: string, index: number, length: number) => {
  */
 export const searchSessions = async (
   query: string,
-  options: { limit?: number; signal?: AbortSignal } = {}
+  options: { limit?: number; signal?: AbortSignal; sessionId?: string } = {}
 ): Promise<SessionSearchHit[]> => {
   const keyword = query.trim().toLowerCase()
   if (!keyword) {
@@ -77,6 +77,33 @@ export const searchSessions = async (
   const limit = options.limit ?? 50
   const hits: SessionSearchHit[] = []
   const seen = new Set<string>()
+
+  // 指定会话时只搜这一条，并且每条消息都可能命中（对话内搜索）
+  if (options.sessionId) {
+    const session = await loadSession(options.sessionId)
+    if (!session || options.signal?.aborted) {
+      return []
+    }
+    for (const message of session.messages) {
+      if (hits.length >= limit) {
+        break
+      }
+      const text = messageText(message)
+      if (!text) continue
+      const index = text.toLowerCase().indexOf(keyword)
+      if (index < 0) continue
+      hits.push({
+        sessionId: session.id,
+        sessionTitle: session.title,
+        updatedAt: message.createdAt,
+        titleHit: false,
+        messageId: message.id,
+        role: message.role,
+        ...buildSnippet(text, index, keyword.length),
+      })
+    }
+    return hits.sort((a, b) => b.updatedAt - a.updatedAt)
+  }
 
   const summaries = await loadSessionSummaries()
   if (options.signal?.aborted) {

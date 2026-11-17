@@ -73,7 +73,7 @@ const Highlighted = ({ hit }: { hit: SessionSearchHit }) => {
  * Ctrl/⌘ + K 唤起，↑↓ 选择、Enter 打开、Esc 关闭；
  * 结果日期显示今天 / 昨天 / 月日（跨年补年份），点击跳到命中消息。
  */
-export const SessionSearch = ({ open }: { open: boolean }) => {
+export const SessionSearch = ({ open, scope = null }: { open: boolean; scope?: string | null }) => {
   const t = useTranslate()
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<SessionSearchHit[]>([])
@@ -116,7 +116,7 @@ export const SessionSearch = ({ open }: { open: boolean }) => {
     abortRef.current?.abort()
     abortRef.current = controller
     const timer = setTimeout(() => {
-      searchSessions(keyword, { signal: controller.signal })
+      searchSessions(keyword, { signal: controller.signal, ...(scope ? { sessionId: scope } : {}) })
         .then((result) => {
           if (controller.signal.aborted) return
           setHits(result)
@@ -137,7 +137,7 @@ export const SessionSearch = ({ open }: { open: boolean }) => {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [open, query, reloadToken])
+  }, [open, query, reloadToken, scope])
 
   // ↑↓ 选中项变化时让它留在可视区
   useEffect(() => {
@@ -162,8 +162,10 @@ export const SessionSearch = ({ open }: { open: boolean }) => {
   }
 
   const openHit = (hit: SessionSearchHit) => {
-    selectSession(hit.sessionId)
-    closeMobileSider()
+    if (!scope) {
+      selectSession(hit.sessionId)
+      closeMobileSider()
+    }
     closeSessionSearch()
     jumpToMessage(hit.sessionId, hit.messageId)
   }
@@ -205,12 +207,12 @@ export const SessionSearch = ({ open }: { open: boolean }) => {
             ref={inputRef}
             className={styles.input}
             value={query}
-            placeholder={t('sessionSearchPlaceholder')}
+            placeholder={scope ? t('conversationSearchPlaceholder') : t('sessionSearchPlaceholder')}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={onKeyDown}
             onCompositionStart={() => (composingRef.current = true)}
             onCompositionEnd={() => (composingRef.current = false)}
-            aria-label={t('sessionSearchPlaceholder')}
+            aria-label={scope ? t('conversationSearchPlaceholder') : t('sessionSearchPlaceholder')}
           />
           <IconButton
             icon={<IconCloseOutline16 />}
@@ -247,9 +249,11 @@ export const SessionSearch = ({ open }: { open: boolean }) => {
                   <IconSearchOutline16 />
                 </span>
                 <span className={styles.itemMain}>
-                  <span className={styles.itemTitle}>
-                    {hit.titleHit ? <Highlighted hit={hit} /> : hit.sessionTitle || t('untitledChat')}
-                  </span>
+                  {scope ? null : (
+                    <span className={styles.itemTitle}>
+                      {hit.titleHit ? <Highlighted hit={hit} /> : hit.sessionTitle || t('untitledChat')}
+                    </span>
+                  )}
                   {hit.titleHit ? null : (
                     <span className={styles.snippet}>
                       <Highlighted hit={hit} />

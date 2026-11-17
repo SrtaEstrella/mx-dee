@@ -76,6 +76,8 @@ export const zh = {
   sessionBatchPinSuccessToast: '已置顶 {count} 个对话',
   sessionBatchUnpinSuccessToast: '已取消置顶 {count} 个对话',
   sessionBatchSelectCloseButtonAriaLabel: '关闭',
+  conversationSearchButton: '搜索当前对话',
+  conversationSearchPlaceholder: '搜索对话内容...',
   more: '更多',
   close: '关闭',
   sessionHistoryTimelineLabelToday: '今天',

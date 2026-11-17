@@ -4,6 +4,9 @@ import { useTranslate } from '../../i18n/index.js'
 import type { Session } from '../../services/chat/types.js'
 import { ChatInput } from '../chatInput/ChatInput.js'
 import { MessageList } from '../messages/MessageList.js'
+import { IconSearchOutline16 } from '../base/icons.js'
+import { IconButton } from '../base/IconButton.js'
+import { openSessionSearch } from '../sider/sessionSearchState.js'
 import { MobileHeader } from './MobileHeader.js'
 import styles from './SessionView.module.css'
 
@@ -28,6 +31,15 @@ export const SessionView = ({
         <div className={styles.header}>
           <div className={clsx(styles.title, siderCollapsed && styles.withCollapsedSider)}>
             {title}
+          </div>
+          <div className={clsx(styles.actions, siderCollapsed && styles.withCollapsedSider)}>
+            <IconButton
+              size="m"
+              icon={<IconSearchOutline16 />}
+              tooltip={t('conversationSearchButton')}
+              tooltipPlacement="bottom"
+              onClick={() => openSessionSearch(session.id)}
+            />
           </div>
         </div>
       )}

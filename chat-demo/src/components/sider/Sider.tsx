@@ -167,7 +167,7 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
             icon={<IconSearchOutline16 />}
             tooltip={`${t('sessionSearchTip')} ${shortcut}`}
             tooltipPlacement="bottom"
-            onClick={openSessionSearch}
+            onClick={() => openSessionSearch()}
           />
           <IconButton
             size="m"

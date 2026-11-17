@@ -26,7 +26,7 @@ export const CollapsedSider = () => {
           tone="primary"
           icon={<IconSearchOutline16 />}
           tooltip={`${t('sessionSearchTip')} ${shortcut}`}
-          onClick={openSessionSearch}
+          onClick={() => openSessionSearch()}
         />
         <IconButton
           size="m"
