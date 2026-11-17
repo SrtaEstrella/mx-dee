@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { useEffect, useState, type RefObject } from 'react'
 import { useTranslate } from '../../i18n/index.js'
+import { useMessageWindow } from './messageWindow.js'
 import styles from './TurnRuler.module.css'
 
 /** 导航条目：一条提问对应的消息、标题，以及分支位置 */
@@ -75,6 +76,8 @@ export const TurnRuler = ({
 
   const jump = (turn: Turn) => {
     const container = scrollRef.current
+    // 目标可能还没进入渲染窗口，先请消息列表把它纳入
+    useMessageWindow.getState().reveal(turn.messageId)
     const node = findNode(turn.messageId)
     if (!container || !node) return
     const delta = node.getBoundingClientRect().top - container.getBoundingClientRect().top

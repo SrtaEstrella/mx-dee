@@ -6,6 +6,7 @@ import { selectMessageVersion, selectSession } from '../../services/chat/store.j
 import { IconCloseOutline16, IconSearchOutline16 } from '../base/icons.js'
 import { IconButton } from '../base/IconButton.js'
 import { showToast } from '../base/toastState.js'
+import { useMessageWindow } from '../messages/messageWindow.js'
 import { closeMobileSider } from './mobileSiderState.js'
 import { closeSessionSearch } from './sessionSearchState.js'
 import styles from './SessionSearch.module.css'
@@ -30,6 +31,8 @@ const findAnchor = (messageId: string): HTMLElement | undefined =>
 /** 滚动到命中消息；消息不在当前分支时先切换一次分支，仍找不到则提示 */
 const jumpToMessage = (sessionId: string, messageId: string | undefined) => {
   if (!messageId) return
+  // 目标可能落在渲染窗口之外，先请消息列表把它纳入
+  useMessageWindow.getState().reveal(messageId)
   const startedAt = Date.now()
   let switched = false
   const attempt = () => {
