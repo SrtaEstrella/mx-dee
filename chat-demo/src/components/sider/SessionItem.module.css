@@ -16,10 +16,6 @@
     color: var(--dsw-alias-brand-primary-invert);
   }
 
-  &.selected {
-    background-color: var(--dsw-specific-sidebar-nav-item-hover);
-  }
-
   @media (hover: hover) {
     &:not(.active):hover {
       background-color: var(--dsw-specific-sidebar-nav-item-hover);
@@ -49,23 +45,23 @@
   margin-left: 4px;
 }
 
-/* 多选模式的勾选框：占用标题左侧的位置，选中时填充品牌色 */
+/* 多选模式的圆形勾选：未选是描边圆，选中是品牌色实心 + 白勾 */
 .checkbox {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  border: 1px solid var(--dsw-alias-border-l3);
-  border-radius: 4px;
-  color: var(--dsw-alias-label-invert, #fff);
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  border: 1.5px solid var(--dsw-alias-border-l3);
+  border-radius: 50%;
+  color: #fff;
 }
 
 .checkboxOn {
-  border-color: var(--dsw-alias-brand-primary);
+  border-color: transparent;
   background-color: var(--dsw-alias-brand-primary);
 }
 

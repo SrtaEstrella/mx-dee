@@ -5,6 +5,7 @@ import {
   IconChevronDownOutline14,
   IconChevronRightOutline14,
   IconCloseOutline16,
+  IconMultiSelectOutline16,
   IconPanelLeftOutline16,
   IconPinOutline16,
   IconSearchOutline16,
@@ -44,6 +45,14 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
   const [batchDeleting, setBatchDeleting] = useState(false)
   const batch = useBatchSelect()
   const shortcut = useMemo(searchShortcutLabel, [])
+  // 选中项是否全部已置顶：决定批量条显示「置顶」还是「取消置顶」
+  const allPinned = useMemo(() => {
+    if (batch.selected.length === 0) {
+      return false
+    }
+    const pinned = new Set(sessions.filter((item) => item.pinned).map((item) => item.id))
+    return batch.selected.every((id) => pinned.has(id))
+  }, [batch.selected, sessions])
 
   /** 批量置顶/取消置顶：逐条写入，全部完成后再提示数量 */
   const applyBatchPin = async (pinned: boolean) => {
@@ -115,15 +124,20 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
       <div className={styles.top}>
         {batch.active ? (
           <>
-            <div className={styles.appName}>{t('sessionBatchSelectChatTitle')}</div>
+            <div className={clsx(styles.appName, styles.batchTitle)}>
+              {batch.selected.length === 0
+                ? t('sessionBatchSelectChatTitle')
+                : t('sessionBatchSelectedCount', { count: batch.selected.length })}
+            </div>
             <div className={styles.topActions}>
-              <IconButton
-                size="m"
-                icon={<IconCloseOutline16 />}
-                tooltip={t('sessionBatchSelectCloseButtonAriaLabel')}
-                tooltipPlacement="bottom"
+              <button
+                type="button"
+                className={styles.batchClose}
+                aria-label={t('sessionBatchSelectCloseButtonAriaLabel')}
                 onClick={batch.stop}
-              />
+              >
+                <IconCloseOutline16 />
+              </button>
             </div>
           </>
         ) : (
@@ -161,6 +175,12 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
             <NewChatIcon />
           </span>
           {t('newChat')}
+        </button>
+      )}
+      {batch.active ? null : (
+        <button type="button" className={styles.batchEntry} onClick={() => batch.start()}>
+          <IconMultiSelectOutline16 size={12} />
+          <span>{t('sessionBatchEntryButton')}</span>
         </button>
       )}
       <div className={styles.listWrap}>
@@ -214,32 +234,24 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
       </div>
       {batch.active ? (
         <div className={styles.batchBar}>
-          <span className={styles.batchCount}>
-            {t('sessionBatchSelectedCount', { count: batch.selected.length })}
-          </span>
-          <div className={styles.batchActions}>
-            <IconButton
-              size="xs"
-              icon={<IconPinOutline16 />}
-              tooltip={t('pinSession')}
-              tooltipPlacement="top"
-              onClick={() => void applyBatchPin(true)}
-            />
-            <IconButton
-              size="xs"
-              icon={<IconUnpinOutline16 />}
-              tooltip={t('unpinSession')}
-              tooltipPlacement="top"
-              onClick={() => void applyBatchPin(false)}
-            />
-            <IconButton
-              size="xs"
-              icon={<IconTrashOutline16 />}
-              tooltip={t('delete')}
-              tooltipPlacement="top"
-              onClick={() => setBatchDeleting(true)}
-            />
-          </div>
+          <button
+            type="button"
+            className={styles.batchAction}
+            disabled={batch.selected.length === 0}
+            onClick={() => void applyBatchPin(!allPinned)}
+          >
+            {allPinned ? <IconUnpinOutline16 /> : <IconPinOutline16 />}
+            <span>{allPinned ? t('unpinSession') : t('pinSession')}</span>
+          </button>
+          <button
+            type="button"
+            className={clsx(styles.batchAction, styles.batchDanger)}
+            disabled={batch.selected.length === 0}
+            onClick={() => setBatchDeleting(true)}
+          >
+            <IconTrashOutline16 />
+            <span>{t('delete')}</span>
+          </button>
         </div>
       ) : null}
       <div className={styles.bottom}>

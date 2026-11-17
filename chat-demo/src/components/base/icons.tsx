@@ -34,20 +34,27 @@ export const IconUnpinOutline16 = () => (
   </svg>
 )
 
-/** 多选入口：方框加勾选清单 */
-export const IconChecklistOutline16 = () => (
-  <svg width={16} height={16} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x={1.75} y={1.75} width={5.5} height={5.5} rx={1.4} stroke="currentColor" strokeWidth={1.4} />
-    <path
-      d="M3.3 4.6L4.3 5.6L6.1 3.5"
-      stroke="currentColor"
-      strokeWidth={1.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path d="M10 4.5H14.25" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" />
-    <path d="M10 8H14.25" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" />
-    <path d="M2 11.75H14.25" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" />
+/** 多选（官方图标：两行「圆点 + 横条」的列表） */
+export const IconMultiSelectOutline16 = ({ size = 16 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <g transform="translate(0.9 1.4)">
+      <path d="M14.2004 9.73944V11.0402H7.40356V9.73944H14.2004Z" fill="currentColor" />
+      <path d="M14.2004 2.15491V3.45569H7.40356V2.15491H14.2004Z" fill="currentColor" />
+      <path
+        d="M4.31055 10.3903C4.31055 9.61068 3.71825 8.9692 2.95898 8.89221L2.80566 8.8844C1.9742 8.8844 1.2998 9.5588 1.2998 10.3903L1.30762 10.5436C1.37947 11.2522 1.94276 11.8153 2.65137 11.8873L2.80566 11.8951C3.58507 11.895 4.22575 11.3027 4.30273 10.5436L4.31055 10.3903ZM5.61035 10.3903C5.61016 11.9394 4.35481 13.1947 2.80566 13.1949C1.25635 13.1949 0.000196493 11.9395 0 10.3903C0 8.84083 1.25623 7.58459 2.80566 7.58459C4.35493 7.58479 5.61035 8.84095 5.61035 10.3903Z"
+        fill="currentColor"
+      />
+      <path
+        d="M4.31091 2.80566C4.31091 2.02619 3.7185 1.38466 2.95935 1.30762L2.80603 1.2998C1.97463 1.2998 1.30017 1.97426 1.30017 2.80566L1.30798 2.95898C1.37989 3.66756 1.94316 4.23082 2.65173 4.30273L2.80603 4.31055C3.58529 4.3103 4.22608 3.71798 4.3031 2.95898L4.31091 2.80566ZM5.61072 2.80566C5.61046 4.35465 4.35502 5.61009 2.80603 5.61035C1.25682 5.61035 0.000624607 4.35481 0.000366211 2.80566C0.000366211 1.25629 1.25666 0 2.80603 0C4.35518 0.000258397 5.61072 1.25645 5.61072 2.80566Z"
+        fill="currentColor"
+      />
+    </g>
   </svg>
 )
 

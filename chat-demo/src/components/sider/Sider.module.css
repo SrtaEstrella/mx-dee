@@ -111,17 +111,64 @@
   }
 }
 
-/* 多选模式的底部操作条：选择计数与批量操作 */
+/* 「多选」入口：列表上方的轻量按钮，图标 12px + 文字 */
+.batchEntry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin: 0 10px 2px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--dsw-alias-label-tertiary);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.batchEntry:hover {
+  color: var(--dsw-alias-label-secondary);
+}
+
+/* 多选模式的标题与关闭：标题显示选择计数，右侧圆形关闭按钮 */
+.batchTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+}
+
+.batchClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: 50%;
+  background: none;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
+.batchClose:hover {
+  color: var(--dsw-alias-label-primary);
+}
+
+/* 多选模式的底部操作条：一条分隔线上居中排列的图标文字按钮 */
 .batchBar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: center;
+  gap: 24px;
   box-sizing: border-box;
-  margin: 0 10px 6px;
-  padding: 4px 4px 4px 10px;
-  border-radius: 12px;
-  background-color: var(--dsw-specific-sidebar-nav-item-hover);
+  margin: 0 10px;
+  padding: 10px 0 12px;
+  border-top: 1px solid var(--dsw-alias-border-l3);
 }
 
 .batchCount {
@@ -138,6 +185,35 @@
   flex-shrink: 0;
   align-items: center;
   gap: 2px;
+}
+
+/* 批量操作按钮：图标 + 文字，与官方一致 */
+.batchAction {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.batchAction:hover:not(:disabled) {
+  background-color: var(--dsw-specific-sidebar-nav-item-hover);
+}
+
+.batchAction:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* 删除用危险色 */
+.batchDanger {
+  color: var(--dsw-alias-state-error-primary, #e5484d);
 }
 
 .deleteText {

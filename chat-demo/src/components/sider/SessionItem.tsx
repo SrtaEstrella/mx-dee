@@ -3,9 +3,9 @@ import { memo, useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
 import {
   IconCheckOutline16,
-  IconChecklistOutline16,
   IconEditOutline16,
   IconEllipsisOutline16,
+  IconMultiSelectOutline16,
   IconPinOutline16,
   IconTrashOutline16,
   IconUnpinOutline16,
@@ -66,12 +66,7 @@ export const SessionItem = memo(function SessionItem({
 
   return (
     <div
-      className={clsx(
-        styles.item,
-        active && styles.active,
-        selectable && styles.selectable,
-        selected && styles.selected
-      )}
+      className={clsx(styles.item, active && styles.active, selectable && styles.selectable)}
       onClick={() => {
         if (selectable) {
           onToggle()
@@ -85,8 +80,7 @@ export const SessionItem = memo(function SessionItem({
         <span className={clsx(styles.checkbox, selected && styles.checkboxOn)} aria-hidden>
           {selected ? <IconCheckOutline16 /> : null}
         </span>
-      ) : null}
-      <div className={styles.title}>{displayTitle}</div>
+      ) : null}      <div className={styles.title}>{displayTitle}</div>
       {selectable ? null : (
         <div className={styles.action} onClick={(event) => event.stopPropagation()}>
           <Menu
@@ -106,7 +100,7 @@ export const SessionItem = memo(function SessionItem({
               {
                 key: 'multiSelect',
                 label: t('sessionBatchEntryButton'),
-                icon: <IconChecklistOutline16 />,
+                icon: <IconMultiSelectOutline16 />,
                 onSelect: onStartBatch,
               },
               {

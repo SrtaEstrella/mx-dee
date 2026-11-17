@@ -7,8 +7,8 @@ type BatchState = {
   active: boolean
   /** 选中的会话 id，按选择顺序排列 */
   selected: string[]
-  /** 从某条会话进入多选，并保持它被选中 */
-  start: (id: string) => void
+  /** 进入多选；给出 id 时把它一起选上（行菜单入口），否则从空选择开始（列表入口） */
+  start: (id?: string) => void
   /** 切换选中；超过上限时返回 false，不改动状态 */
   toggle: (id: string) => boolean
   stop: () => void
@@ -17,7 +17,7 @@ type BatchState = {
 export const useBatchSelect = create<BatchState>((set, get) => ({
   active: false,
   selected: [],
-  start: (id) => set({ active: true, selected: [id] }),
+  start: (id) => set({ active: true, selected: id ? [id] : [] }),
   toggle: (id) => {
     const { selected } = get()
     if (selected.includes(id)) {
