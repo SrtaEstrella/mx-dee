@@ -342,6 +342,27 @@ const ImportConfirm = ({
         />
         <span>{t('historyImportMerge')}</span>
       </label>
+      <label className={styles.importMerge}>
+        <input
+          type="checkbox"
+          checked={historyImport.includeImages}
+          onChange={(event) => historyImport.setIncludeImages(event.target.checked)}
+        />
+        <span>{t('historyImportIncludeImages')}</span>
+      </label>
+      <label className={styles.importOption}>
+        <span>{t('historyImportMinTurns')}</span>
+        <input
+          type="number"
+          min={0}
+          max={999}
+          step={1}
+          className={styles.importNumber}
+          value={historyImport.minTurns}
+          onChange={(event) => historyImport.setMinTurns(Math.max(0, Number(event.target.value) || 0))}
+        />
+        <span className={styles.importHint}>{t('historyImportMinTurnsHint')}</span>
+      </label>
       <div className={styles.importConfirmText}>
         {historyImport.merge
           ? t('historyImportMergeDescription')
@@ -450,6 +471,8 @@ const useHistoryImport = () => {
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
   const [merge, setMerge] = useState(true)
+  const [includeImages, setIncludeImages] = useState(true)
+  const [minTurns, setMinTurns] = useState(0)
   const [status, setStatus] = useState<Status>(null)
   const importing = useRef(false)
 
@@ -462,7 +485,10 @@ const useHistoryImport = () => {
     setBusy(true)
     setStatus(null)
     try {
-      const count = await importHistory(file, merge ? 'merge' : 'replace')
+      const count = await importHistory(file, merge ? 'merge' : 'replace', {
+        minTurns,
+        includeImages,
+      })
       setStatus({ key: count === 1 ? 'historyImportedOne' : 'historyImported', params: { count } })
     } catch {
       setStatus({ key: 'historyImportFailed', error: true })
@@ -472,7 +498,20 @@ const useHistoryImport = () => {
     }
   }
 
-  return { file, busy, status, merge, setMerge, select: setFile, cancel: () => setFile(null), confirm }
+  return {
+    file,
+    busy,
+    status,
+    merge,
+    setMerge,
+    includeImages,
+    setIncludeImages,
+    minTurns,
+    setMinTurns,
+    select: setFile,
+    cancel: () => setFile(null),
+    confirm,
+  }
 }
 
 /** 导入 = 覆盖：用选中文件替换本地全部会话与附件。 */

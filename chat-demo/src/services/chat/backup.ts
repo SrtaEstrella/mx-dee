@@ -44,11 +44,15 @@ export const exportHistory = (): Promise<{ name: string; blob: Blob }> =>
  * 通过后从 ZIP 流式写入暂存，成功才写入会话与图片原件。
  * mode 为 merge 时保留已有会话，只补入本地没有的那些；返回本次新增的会话数。
  */
-export const importHistory = (file: File, mode: 'replace' | 'merge' = 'replace'): Promise<number> =>
+export const importHistory = (
+  file: File,
+  mode: 'replace' | 'merge' = 'replace',
+  options: { minTurns?: number; includeImages?: boolean } = {}
+): Promise<number> =>
   enqueueBackup(async () => {
     const { checkArchiveFormat, importArchive } = await import('./history/importArchive.js')
     await checkArchiveFormat(file)
-    return replaceHistory(() => importArchive(file), mode)
+    return replaceHistory(() => importArchive(file, options), mode)
   })
 
 /** 确认删除后调用：以空历史原子替换全部本地会话与附件，保留 API Key 和其他设置。 */

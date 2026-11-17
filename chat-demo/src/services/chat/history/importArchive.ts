@@ -1,7 +1,7 @@
 import * as db from '../db.js'
 import { BackupError, fail } from './errors.js'
 import type { SessionIndexEntry } from './format.js'
-import { INDEX_PATH, MANIFEST_PATH, USER_PATH, parseSessionPath, sessionFilesDir } from './paths.js'
+import { INDEX_PATH, MANIFEST_PATH, USER_PATH, parseSessionPath } from './paths.js'
 import { checkManifest, readSessionFile, readSessionIndex } from './schema.js'
 import { toLocalSession } from './toLocal.js'
 import {
@@ -72,13 +72,24 @@ export const checkArchiveFormat = async (file: File): Promise<void> => {
   fail('backupUnrecognized')
 }
 
+/** 导入选项：轮次下限按模型回复条数计；关闭带图时不保存任何附件 */
+export type ImportOptions = {
+  /** 只导入模型回复条数不少于该值的会话，0 表示不限 */
+  minTurns?: number
+  /** 是否保存图片原件；关闭后图片消息只保留文件名 */
+  includeImages?: boolean
+}
+
 /**
  * 流式导入：manifest → user（不导入）→ 全部会话 JSON → index → 全部图片。
  * 也支持会话与图片交错排列、index 位于末尾的条目顺序。
  * 会话读完立即暂存，只保留图片路径映射；图片全部读完后逐会话回填 MIME，不改变图片身份。
  * 写入导入暂存存储；调用方负责先清空暂存，成功后替换正式数据，失败时清理暂存。
+ * 轮次不足的会话与（可选）全部图片会被跳过。
  */
-export const importArchive = async (file: File): Promise<void> => {
+export const importArchive = async (file: File, options: ImportOptions = {}): Promise<void> => {
+  const minTurns = Math.max(0, options.minTurns ?? 0)
+  const includeImages = options.includeImages ?? true
   if (!(await isZipFile(file))) {
     fail('backupUnrecognized')
   }
@@ -88,10 +99,9 @@ export const importArchive = async (file: File): Promise<void> => {
   const stored = new Map<string, string>()
   let manifest = false
   let index: SessionIndexEntry[] | undefined
-  let currentSessionId: string | undefined
 
   const saveImage = async (entry: ArchiveEntry, id: string) => {
-    if (stored.has(id)) {
+    if (!includeImages || stored.has(id)) {
       await skipEntry(entry)
       return
     }
@@ -119,20 +129,21 @@ export const importArchive = async (file: File): Promise<void> => {
         if (local.session.id !== sessionId || imported.has(sessionId)) {
           fail('backupIncomplete')
         }
+        const turns = local.session.messages.filter((message) => message.role === 'assistant').length
+        if (turns < minTurns) {
+          // 轮次不足：整段跳过，其附件也不再有映射
+          continue
+        }
         imported.add(sessionId)
-        currentSessionId = sessionId
         for (const [imagePath, id] of local.images) {
           images.set(imagePath, id)
         }
         await db.addStagingSession(local.session)
       } else if (path === INDEX_PATH && !index) {
         index = readSessionIndex(await readJson(entry))
-      } else if (
-        index
-          ? imported.has(/^chat_sessions\/([^/]+)_files\//.exec(path)?.[1] ?? '')
-          : currentSessionId && path.startsWith(sessionFilesDir(currentSessionId))
-      ) {
-        // 没有被引用的条目不保存，引用了但缺失的图片只展示文件名。
+      } else if (/^chat_sessions\/[^/]+_files\//.test(path)) {
+        // 附件按路径映射判定归属：未导入的会话、或关闭带图时不保存，
+        // 但条目仍要读完以校验大小与 CRC。
         const id = images.get(path)
         await (id === undefined ? skipEntry(entry) : saveImage(entry, id))
       } else {
@@ -145,14 +156,9 @@ export const importArchive = async (file: File): Promise<void> => {
   if (!manifest) {
     fail('backupUnrecognized')
   }
-  // index 只列出成功写出的会话，与会话文件一一对应。
+  // index 列出归档里的全部会话；筛选只影响实际写入的部分，因此只校验「写入的都在索引里」。
   const listed = new Set(index?.map((entry) => entry.id))
-  if (
-    !index ||
-    listed.size !== index.length ||
-    listed.size !== imported.size ||
-    [...imported].some((id) => !listed.has(id))
-  ) {
+  if (!index || listed.size !== index.length || [...imported].some((id) => !listed.has(id))) {
     fail('backupIncomplete')
   }
   await db.updateStagingFileTypes(stored)

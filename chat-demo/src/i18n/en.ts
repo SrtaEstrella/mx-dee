@@ -154,6 +154,9 @@ export const en = {
   historyImportConfirmDescription:
     'With "keep existing chats" unchecked, the archive replaces every local chat and attachment. Import anyway?',
   historyImportMerge: 'Keep existing chats (merge)',
+  historyImportIncludeImages: 'Import image attachments',
+  historyImportMinTurns: 'Min turns',
+  historyImportMinTurnsHint: 'Model replies; 0 means no limit',
   historyImportMergeDescription:
     'Only adds chats that are not stored locally; an existing chat keeps its local version, and attachments are filled in as needed.',
   historyImportDescription:
