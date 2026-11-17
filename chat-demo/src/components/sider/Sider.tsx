@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
 import {
   IconChevronDownOutline14,
@@ -41,6 +41,9 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
   const activeId = useChatStore((state) => state.activeId)
   const [now, setNow] = useState(Date.now)
   const groups = useMemo(() => groupSessions(sessions, now, t), [sessions, now, t])
+  const listRef = useRef<HTMLDivElement>(null)
+  /** 当前贴在列表顶端的那个分组标题；多选入口跟着它走 */
+  const [topGroupKey, setTopGroupKey] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<SessionSummary | null>(null)
   const [deletePending, setDeletePending] = useState(false)
   const [batchDeleting, setBatchDeleting] = useState(false)
@@ -54,6 +57,40 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
     const pinned = new Set(sessions.filter((item) => item.pinned).map((item) => item.id))
     return batch.selected.every((id) => pinned.has(id))
   }, [batch.selected, sessions])
+
+  // 滚动时判断哪个分组标题正贴在顶部，多选入口只挂在它上面
+  useEffect(() => {
+    const list = listRef.current
+    if (!list) {
+      return
+    }
+    const update = () => {
+      const listTop = list.getBoundingClientRect().top
+      const sections = [...list.querySelectorAll<HTMLElement>('[data-group]')]
+      let active: string | null = sections[0]?.dataset.group ?? null
+      for (const section of sections) {
+        const header = section.querySelector<HTMLElement>('[class*="sectionHeader"]')
+        if (!header) {
+          continue
+        }
+        // 标题行贴住顶部（留 8px 容差，section 自身有 padding-top）
+        if (header.getBoundingClientRect().top - listTop <= 8) {
+          active = section.dataset.group ?? null
+        } else {
+          break
+        }
+      }
+      setTopGroupKey(active)
+    }
+    update()
+    list.addEventListener('scroll', update, { passive: true })
+    const observer = new ResizeObserver(update)
+    observer.observe(list)
+    return () => {
+      list.removeEventListener('scroll', update)
+      observer.disconnect()
+    }
+  }, [groups])
 
   /** 批量置顶/取消置顶：逐条写入，全部完成后再提示数量 */
   const applyBatchPin = async (pinned: boolean) => {
@@ -173,13 +210,13 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
         </button>
       )}
       <div className={styles.listWrap}>
-        <div className={styles.list}>
-          {groups.map((group, groupIndex) => {
+        <div className={styles.list} ref={listRef}>
+          {groups.map((group) => {
             // 与官方一致：置顶超过 10 个才出现折叠控件，否则只有标题
             const collapsible = group.key === 'pinned' && group.sessions.length > PINNED_FOLD_THRESHOLD
             const collapsed = collapsible && pinnedCollapsed
             return (
-              <div key={group.key} className={styles.section}>
+              <div key={group.key} className={styles.section} data-group={group.key}>
                 <div className={styles.sectionHeader}>
                   <span>
                     {collapsed ? t('pinNCountChats', { count: group.sessions.length }) : group.label}
@@ -200,7 +237,7 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
                         {collapsed ? <IconChevronRightOutline14 /> : <IconChevronDownOutline14 />}
                       </button>
                     ) : null}
-                    {batch.active || groupIndex > 0 ? null : (
+                    {batch.active || group.key !== topGroupKey ? null : (
                       <Tooltip content={t('sessionBatchEntryButton')} placement="bottom">
                         <button
                           type="button"
