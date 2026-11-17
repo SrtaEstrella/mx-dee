@@ -88,7 +88,6 @@ export const TurnRuler = ({
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <div className={styles.bg} />
       <div className={clsx(styles.wrapper, open && styles.wrapperOpen)}>
         <div className={styles.page}>
           {turns.map((turn, index) => (
