@@ -26,6 +26,8 @@
   width: fit-content;
   max-width: 240px;
   max-height: 100%;
+  /* 卡片自带固定内边距，列表在内部滚动，滚到哪一段边距都在 */
+  padding: 15px 0;
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 16px;
@@ -53,7 +55,7 @@
   align-items: flex-end;
   box-sizing: border-box;
   max-height: 250px;
-  padding: 15px 8px 15px 12px;
+  padding: 0 8px 0 12px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;

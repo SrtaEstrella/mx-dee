@@ -1,6 +1,8 @@
 :root {
   --message-list-max-width: 840px;
   --message-list-padding-horizontal: 44px;
+  /* 应用模式下右上角窗口控件占用的宽度；非应用模式为 0 */
+  --wco-controls-width: 0px;
 }
 
 @media (max-width: 1023px) {

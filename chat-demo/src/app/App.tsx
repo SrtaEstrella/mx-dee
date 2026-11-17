@@ -55,6 +55,34 @@ const searchScope = useSessionSearch((state) => state.scope)
 
   usePreventPageScroll(isMobile)
 
+  // 应用模式下窗口控件压在页面右上角：把控件宽度写进 CSS 变量，只给那一角让位
+  useEffect(() => {
+    const overlay = (navigator as Navigator & {
+      windowControlsOverlay?: {
+        visible: boolean
+        getTitlebarAreaRect?: () => DOMRect
+        addEventListener?: (type: string, listener: () => void) => void
+        removeEventListener?: (type: string, listener: () => void) => void
+      }
+    }).windowControlsOverlay
+    if (!overlay) {
+      return
+    }
+    const root = document.documentElement.style
+    const apply = () => {
+      const rect = overlay.visible ? overlay.getTitlebarAreaRect?.() : undefined
+      const reserved = rect ? Math.max(0, window.innerWidth - Math.round(rect.x + rect.width)) : 0
+      root.setProperty('--wco-controls-width', `${reserved}px`)
+    }
+    apply()
+    overlay.addEventListener?.('geometrychange', apply)
+    window.addEventListener('resize', apply)
+    return () => {
+      overlay.removeEventListener?.('geometrychange', apply)
+      window.removeEventListener('resize', apply)
+    }
+  }, [])
+
   useEffect(() => {
     document.documentElement.lang = locale
   }, [locale])
