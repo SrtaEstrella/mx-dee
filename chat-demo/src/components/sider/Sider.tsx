@@ -4,14 +4,18 @@ import { useTranslate } from '../../i18n/index.js'
 import {
   IconChevronDownOutline14,
   IconChevronRightOutline14,
+  IconCloseOutline16,
   IconPanelLeftOutline16,
+  IconPinOutline16,
   IconSearchOutline16,
   IconSettingsOutline16,
+  IconTrashOutline16,
+  IconUnpinOutline16,
   NewChatIcon,
 } from '../base/icons.js'
 import { setPinnedCollapsed, setSiderCollapsed, useSettings } from '../../services/settings.js'
 import { groupSessions } from '../../services/chat/sessionGroups.js'
-import { newChat, removeSession, useChatStore } from '../../services/chat/store.js'
+import { newChat, removeSession, setSessionPinned, useChatStore } from '../../services/chat/store.js'
 import type { SessionSummary } from '../../services/chat/types.js'
 import { Button } from '../base/Button.js'
 import { IconButton } from '../base/IconButton.js'
@@ -22,6 +26,7 @@ import { closeMobileSider, useMobileSider } from './mobileSiderState.js'
 import { openSessionSearch } from './sessionSearchState.js'
 import { SessionItem } from './SessionItem.js'
 import { searchShortcutLabel } from './SessionSearch.js'
+import { useBatchSelect } from './batchState.js'
 import styles from './Sider.module.css'
 
 /** 展开的侧边栏：名称与收起按钮、开启新对话、按时间分组的会话列表、底部设置；移动端放在抽屉里，收起按钮关闭抽屉 */
@@ -36,7 +41,50 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
   const groups = useMemo(() => groupSessions(sessions, now, t), [sessions, now, t])
   const [deleting, setDeleting] = useState<SessionSummary | null>(null)
   const [deletePending, setDeletePending] = useState(false)
+  const [batchDeleting, setBatchDeleting] = useState(false)
+  const batch = useBatchSelect()
   const shortcut = useMemo(searchShortcutLabel, [])
+
+  /** 批量置顶/取消置顶：逐条写入，全部完成后再提示数量 */
+  const applyBatchPin = async (pinned: boolean) => {
+    const ids = batch.selected
+    if (ids.length === 0) {
+      return
+    }
+    for (const id of ids) {
+      setSessionPinned(id, pinned)
+    }
+    batch.stop()
+    showToast({
+      key: pinned ? 'sessionBatchPinSuccessToast' : 'sessionBatchUnpinSuccessToast',
+      params: { count: ids.length },
+    })
+  }
+
+  const confirmBatchDelete = async () => {
+    const ids = batch.selected
+    if (ids.length === 0 || deletePending) {
+      return
+    }
+    setDeletePending(true)
+    try {
+      let removed = 0
+      for (const id of ids) {
+        if (await removeSession(id)) {
+          removed += 1
+        }
+      }
+      setBatchDeleting(false)
+      batch.stop()
+      showToast(
+        removed === ids.length
+          ? { key: 'sessionBatchDeleteSuccessToast', params: { count: removed } }
+          : { key: 'sessionDeleteFailed', type: 'error' }
+      )
+    } finally {
+      setDeletePending(false)
+    }
+  }
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>
@@ -65,37 +113,56 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
   return (
     <div className={clsx(styles.sider, mobile && styles.mobile)}>
       <div className={styles.top}>
-        <div className={styles.appName}>{t('appName')}</div>
-        <div className={styles.topActions}>
-          <IconButton
-            size="m"
-            icon={<IconSearchOutline16 />}
-            tooltip={`${t('sessionSearchTip')} ${shortcut}`}
-            tooltipPlacement="bottom"
-            onClick={openSessionSearch}
-          />
-          <IconButton
-            size="m"
-            icon={<IconPanelLeftOutline16 />}
-            tooltip={t('collapseSiderbarButton')}
-            tooltipPlacement="bottom"
-            onClick={() => (mobile ? closeMobileSider() : setSiderCollapsed(true))}
-          />
-        </div>
+        {batch.active ? (
+          <>
+            <div className={styles.appName}>{t('sessionBatchSelectChatTitle')}</div>
+            <div className={styles.topActions}>
+              <IconButton
+                size="m"
+                icon={<IconCloseOutline16 />}
+                tooltip={t('sessionBatchSelectCloseButtonAriaLabel')}
+                tooltipPlacement="bottom"
+                onClick={batch.stop}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className={styles.appName}>{t('appName')}</div>
+            <div className={styles.topActions}>
+              <IconButton
+                size="m"
+                icon={<IconSearchOutline16 />}
+                tooltip={`${t('sessionSearchTip')} ${shortcut}`}
+                tooltipPlacement="bottom"
+                onClick={openSessionSearch}
+              />
+              <IconButton
+                size="m"
+                icon={<IconPanelLeftOutline16 />}
+                tooltip={t('collapseSiderbarButton')}
+                tooltipPlacement="bottom"
+                onClick={() => (mobile ? closeMobileSider() : setSiderCollapsed(true))}
+              />
+            </div>
+          </>
+        )}
       </div>
-      <button
-        type="button"
-        className={styles.newChat}
-        onClick={() => {
-          newChat()
-          closeMobileSider()
-        }}
-      >
-        <span className={styles.newChatIcon}>
-          <NewChatIcon />
-        </span>
-        {t('newChat')}
-      </button>
+      {batch.active ? null : (
+        <button
+          type="button"
+          className={styles.newChat}
+          onClick={() => {
+            newChat()
+            closeMobileSider()
+          }}
+        >
+          <span className={styles.newChatIcon}>
+            <NewChatIcon />
+          </span>
+          {t('newChat')}
+        </button>
+      )}
       <div className={styles.listWrap}>
         <div className={styles.list}>
           {groups.map((group) => {
@@ -130,6 +197,14 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
                         session={session}
                         active={session.id === activeId}
                         onDelete={() => setDeleting(session)}
+                        selectable={batch.active}
+                        selected={batch.selected.includes(session.id)}
+                        onToggle={() => {
+                          if (!batch.toggle(session.id)) {
+                            showToast({ key: 'sessionBatchMaxSelectToast' })
+                          }
+                        }}
+                        onStartBatch={() => batch.start(session.id)}
                       />
                     ))}
               </div>
@@ -137,6 +212,36 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
           })}
         </div>
       </div>
+      {batch.active ? (
+        <div className={styles.batchBar}>
+          <span className={styles.batchCount}>
+            {t('sessionBatchSelectedCount', { count: batch.selected.length })}
+          </span>
+          <div className={styles.batchActions}>
+            <IconButton
+              size="xs"
+              icon={<IconPinOutline16 />}
+              tooltip={t('pinSession')}
+              tooltipPlacement="top"
+              onClick={() => void applyBatchPin(true)}
+            />
+            <IconButton
+              size="xs"
+              icon={<IconUnpinOutline16 />}
+              tooltip={t('unpinSession')}
+              tooltipPlacement="top"
+              onClick={() => void applyBatchPin(false)}
+            />
+            <IconButton
+              size="xs"
+              icon={<IconTrashOutline16 />}
+              tooltip={t('delete')}
+              tooltipPlacement="top"
+              onClick={() => setBatchDeleting(true)}
+            />
+          </div>
+        </div>
+      ) : null}
       <div className={styles.bottom}>
         <button type="button" className={styles.settings} onClick={() => openSettings('general')}>
           <span className={styles.settingsIcon}>
@@ -145,6 +250,32 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
           <span className={styles.settingsLabel}>{t('settings')}</span>
         </button>
       </div>
+      {batchDeleting ? (
+        <Modal
+          title={t('sessionBatchDeleteAlertTitle', { count: batch.selected.length })}
+          onClose={() => {
+            if (!deletePending) {
+              setBatchDeleting(false)
+            }
+          }}
+          footer={
+            <>
+              <Button
+                variant="outlined"
+                disabled={deletePending}
+                onClick={() => setBatchDeleting(false)}
+              >
+                {t('cancel')}
+              </Button>
+              <Button variant="danger" disabled={deletePending} onClick={() => void confirmBatchDelete()}>
+                {t('delete')}
+              </Button>
+            </>
+          }
+        >
+          <div className={styles.deleteText}>{t('sessionBatchDeleteDescription')}</div>
+        </Modal>
+      ) : null}
       {deleting ? (
         <Modal
           title={t('deleteSessionModalContentTitle')}

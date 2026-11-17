@@ -34,6 +34,23 @@ export const IconUnpinOutline16 = () => (
   </svg>
 )
 
+/** 多选入口：方框加勾选清单 */
+export const IconChecklistOutline16 = () => (
+  <svg width={16} height={16} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x={1.75} y={1.75} width={5.5} height={5.5} rx={1.4} stroke="currentColor" strokeWidth={1.4} />
+    <path
+      d="M3.3 4.6L4.3 5.6L6.1 3.5"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path d="M10 4.5H14.25" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" />
+    <path d="M10 8H14.25" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" />
+    <path d="M2 11.75H14.25" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" />
+  </svg>
+)
+
 export const IconCheckOutline16 = () => (
   <svg width={16} height={16} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path

@@ -2,6 +2,8 @@ import clsx from 'clsx'
 import { memo, useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
 import {
+  IconCheckOutline16,
+  IconChecklistOutline16,
   IconEditOutline16,
   IconEllipsisOutline16,
   IconPinOutline16,
@@ -19,10 +21,19 @@ export const SessionItem = memo(function SessionItem({
   session,
   active,
   onDelete,
+  selectable = false,
+  selected = false,
+  onToggle = () => {},
+  onStartBatch = () => {},
 }: {
   session: SessionSummary
   active: boolean
   onDelete: () => void
+  /** 多选模式：整行变成可勾选的选项，隐藏「更多」菜单 */
+  selectable?: boolean
+  selected?: boolean
+  onToggle?: () => void
+  onStartBatch?: () => void
 }) {
   const t = useTranslate()
   const [editing, setEditing] = useState(false)
@@ -55,42 +66,64 @@ export const SessionItem = memo(function SessionItem({
 
   return (
     <div
-      className={clsx(styles.item, active && styles.active)}
+      className={clsx(
+        styles.item,
+        active && styles.active,
+        selectable && styles.selectable,
+        selected && styles.selected
+      )}
       onClick={() => {
+        if (selectable) {
+          onToggle()
+          return
+        }
         selectSession(session.id)
         closeMobileSider()
       }}
     >
+      {selectable ? (
+        <span className={clsx(styles.checkbox, selected && styles.checkboxOn)} aria-hidden>
+          {selected ? <IconCheckOutline16 /> : null}
+        </span>
+      ) : null}
       <div className={styles.title}>{displayTitle}</div>
-      <div className={styles.action} onClick={(event) => event.stopPropagation()}>
-        <Menu
-          options={[
-            {
-              key: 'pin',
-              label: session.pinned ? t('unpinSession') : t('pinSession'),
-              icon: session.pinned ? <IconUnpinOutline16 /> : <IconPinOutline16 />,
-              onSelect: () => setSessionPinned(session.id, !session.pinned),
-            },
-            {
-              key: 'rename',
-              label: t('sessionItemMenuRenameOption'),
-              icon: <IconEditOutline16 />,
-              onSelect: () => setEditing(true),
-            },
-            {
-              key: 'delete',
-              label: t('delete'),
-              icon: <IconTrashOutline16 />,
-              danger: true,
-              onSelect: onDelete,
-            },
-          ]}
-        >
-          {({ toggle }) => (
-            <IconButton icon={<IconEllipsisOutline16 />} aria-label={t('more')} onClick={toggle} />
-          )}
-        </Menu>
-      </div>
+      {selectable ? null : (
+        <div className={styles.action} onClick={(event) => event.stopPropagation()}>
+          <Menu
+            options={[
+              {
+                key: 'pin',
+                label: session.pinned ? t('unpinSession') : t('pinSession'),
+                icon: session.pinned ? <IconUnpinOutline16 /> : <IconPinOutline16 />,
+                onSelect: () => setSessionPinned(session.id, !session.pinned),
+              },
+              {
+                key: 'rename',
+                label: t('sessionItemMenuRenameOption'),
+                icon: <IconEditOutline16 />,
+                onSelect: () => setEditing(true),
+              },
+              {
+                key: 'multiSelect',
+                label: t('sessionBatchEntryButton'),
+                icon: <IconChecklistOutline16 />,
+                onSelect: onStartBatch,
+              },
+              {
+                key: 'delete',
+                label: t('delete'),
+                icon: <IconTrashOutline16 />,
+                danger: true,
+                onSelect: onDelete,
+              },
+            ]}
+          >
+            {({ toggle }) => (
+              <IconButton icon={<IconEllipsisOutline16 />} aria-label={t('more')} onClick={toggle} />
+            )}
+          </Menu>
+        </div>
+      )}
     </div>
   )
 })
