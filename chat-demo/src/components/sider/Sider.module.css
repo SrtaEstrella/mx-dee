@@ -20,14 +20,6 @@
   margin-bottom: 16px;
   padding: 15px 0 10px 4px;
   flex-shrink: 0;
-  /* 应用模式下这一行同时充当窗口拖拽区 */
-  app-region: drag;
-  -webkit-app-region: drag;
-}
-
-.topActions {
-  app-region: no-drag;
-  -webkit-app-region: no-drag;
 }
 
 .appName {

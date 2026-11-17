@@ -11,12 +11,9 @@
   justify-content: space-between;
   flex-shrink: 0;
   height: 60px;
-  /* 应用模式下右上角让出窗口控件的宽度，搜索按钮不会被压住 */
-  padding: 12px calc(18px + var(--wco-controls-width, 0px)) 0 18px;
+  padding: 12px 18px 0;
   box-sizing: border-box;
   background: var(--dsw-alias-bg-base);
-  app-region: drag;
-  -webkit-app-region: drag;
 }
 
 /* 会话页右上角的操作区（对话内搜索） */
@@ -25,8 +22,6 @@
   flex-shrink: 0;
   align-items: center;
   gap: 2px;
-  app-region: no-drag;
-  -webkit-app-region: no-drag;
 }
 
 .title {

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useState, type RefObject } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useTranslate } from '../../i18n/index.js'
 import { useMessageWindow } from './messageWindow.js'
 import styles from './TurnRuler.module.css'
@@ -34,6 +34,7 @@ export const TurnRuler = ({
   const [active, setActive] = useState(0)
   const [open, setOpen] = useState(false)
   const [usable, setUsable] = useState(false)
+  const pageRef = useRef<HTMLDivElement>(null)
 
   /** 按 data-message-id 找元素；消息 id 是纯数字，逐条比对避免选择器转义问题 */
   const findNode = (id: string): HTMLElement | undefined => {
@@ -71,6 +72,25 @@ export const TurnRuler = ({
     }
   }, [scrollRef, turns])
 
+  // 让高亮刻度留在标尺自身的可视区内：轮次多时列表比 250px 高得多
+  useEffect(() => {
+    const page = pageRef.current
+    if (!page) {
+      return
+    }
+    const item = page.children[active] as HTMLElement | undefined
+    if (!item) {
+      return
+    }
+    const top = item.offsetTop
+    const bottom = top + item.offsetHeight
+    if (top < page.scrollTop) {
+      page.scrollTop = top - 4
+    } else if (bottom > page.scrollTop + page.clientHeight) {
+      page.scrollTop = bottom - page.clientHeight + 4
+    }
+  }, [active, turns])
+
   // 一轮对话没有导航意义；页面放得下时也不显示，避免留下一条空胶囊
   if (turns.length < 2 || !usable) return null
 
@@ -92,7 +112,7 @@ export const TurnRuler = ({
       onMouseLeave={() => setOpen(false)}
     >
       <div className={clsx(styles.wrapper, open && styles.wrapperOpen)}>
-        <div className={styles.page}>
+        <div className={styles.page} ref={pageRef}>
           {turns.map((turn, index) => (
             <div
               key={turn.messageId}
