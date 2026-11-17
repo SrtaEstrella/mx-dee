@@ -303,6 +303,8 @@ export const initChat = (): Promise<void> => {
   set({ initError: false })
   initTask = (async () => {
     try {
+      // 先补齐旧摘要缺失的派生字段，再读列表
+      await db.refreshStaleSummaries()
       const summaries = await db.loadSessionSummaries()
       if (epoch === historyEpoch) {
         set({ ready: true, sessions: sortSessions(summaries) })
