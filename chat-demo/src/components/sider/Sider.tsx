@@ -1,8 +1,15 @@
 import clsx from 'clsx'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
-import { IconPanelLeftOutline16, IconSearchOutline16, IconSettingsOutline16, NewChatIcon } from '../base/icons.js'
-import { setSiderCollapsed } from '../../services/settings.js'
+import {
+  IconChevronDownOutline14,
+  IconChevronRightOutline14,
+  IconPanelLeftOutline16,
+  IconSearchOutline16,
+  IconSettingsOutline16,
+  NewChatIcon,
+} from '../base/icons.js'
+import { setPinnedCollapsed, setSiderCollapsed, useSettings } from '../../services/settings.js'
 import { groupSessions } from '../../services/chat/sessionGroups.js'
 import { newChat, removeSession, useChatStore } from '../../services/chat/store.js'
 import type { SessionSummary } from '../../services/chat/types.js'
@@ -18,9 +25,12 @@ import { searchShortcutLabel } from './SessionSearch.js'
 import styles from './Sider.module.css'
 
 /** 展开的侧边栏：名称与收起按钮、开启新对话、按时间分组的会话列表、底部设置；移动端放在抽屉里，收起按钮关闭抽屉 */
+const PINNED_FOLD_THRESHOLD = 10
+
 export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
   const t = useTranslate()
   const sessions = useChatStore((state) => state.sessions)
+  const pinnedCollapsed = useSettings((state) => state.pinnedCollapsed)
   const activeId = useChatStore((state) => state.activeId)
   const [now, setNow] = useState(Date.now)
   const groups = useMemo(() => groupSessions(sessions, now, t), [sessions, now, t])
@@ -88,19 +98,43 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
       </button>
       <div className={styles.listWrap}>
         <div className={styles.list}>
-          {groups.map((group) => (
-            <div key={group.key} className={styles.section}>
-              <div className={styles.sectionHeader}>{group.label}</div>
-              {group.sessions.map((session) => (
-                <SessionItem
-                  key={session.id}
-                  session={session}
-                  active={session.id === activeId}
-                  onDelete={() => setDeleting(session)}
-                />
-              ))}
-            </div>
-          ))}
+          {groups.map((group) => {
+            // 与官方一致：置顶超过 10 个才出现折叠控件，否则只有标题
+            const collapsible = group.key === 'pinned' && group.sessions.length > PINNED_FOLD_THRESHOLD
+            const collapsed = collapsible && pinnedCollapsed
+            return (
+              <div key={group.key} className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  {collapsed ? t('pinNCountChats', { count: group.sessions.length }) : group.label}
+                  {collapsible ? (
+                    <button
+                      type="button"
+                      className={styles.sectionToggle}
+                      aria-label={
+                        collapsed
+                          ? t('sessionPinnedSectionExpandTooltip')
+                          : t('sessionPinnedSectionCollapseTooltip')
+                      }
+                      aria-expanded={!collapsed}
+                      onClick={() => setPinnedCollapsed(!pinnedCollapsed)}
+                    >
+                      {collapsed ? <IconChevronRightOutline14 /> : <IconChevronDownOutline14 />}
+                    </button>
+                  ) : null}
+                </div>
+                {collapsed
+                  ? null
+                  : group.sessions.map((session) => (
+                      <SessionItem
+                        key={session.id}
+                        session={session}
+                        active={session.id === activeId}
+                        onDelete={() => setDeleting(session)}
+                      />
+                    ))}
+              </div>
+            )
+          })}
         </div>
       </div>
       <div className={styles.bottom}>
