@@ -17,6 +17,7 @@ import { SessionView } from '../components/session/SessionView.js'
 import { MobileHeader } from '../components/session/MobileHeader.js'
 import { Welcome } from '../components/session/Welcome.js'
 import { SettingsDialog } from '../components/settings/SettingsDialog.js'
+import { ProviderOnboarding } from '../components/settings/ProviderOnboarding.js'
 import { Toast } from '../components/base/Toast.js'
 import { showToast } from '../components/base/toastState.js'
 import { onUploadNotice } from '../services/attachments.js'
@@ -147,8 +148,7 @@ const searchScope = useSessionSearch((state) => state.scope)
               </Button>
             </div>
           ) : null}
-          <div className={styles.content}>
-            {siderCollapsed ? <CollapsedSider /> : null}
+          <div className={styles.content}>            {siderCollapsed ? <CollapsedSider /> : null}
             {!ready || (activeId !== null && !session) ? (
               <div className={styles.loadingView}>
                 {isMobile ? <MobileHeader /> : null}
@@ -185,6 +185,8 @@ const searchScope = useSessionSearch((state) => state.scope)
               <Welcome />
             )}
           </div>
+          {/* 没有任何可用 API 时先引导添加，避免发了消息才看到密钥错误 */}
+          <ProviderOnboarding />
         </main>
         <SearchPanel />
       </div>

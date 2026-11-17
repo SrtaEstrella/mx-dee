@@ -35,6 +35,8 @@ export const ApiProviders = () => {
       setProviders([])
       setFailed(true)
     }
+    // 增删改之后通知引导层重新判断「是否还没有可用 API」
+    window.dispatchEvent(new Event('ds-providers-changed'))
   }
 
   useEffect(() => {
@@ -57,9 +59,18 @@ export const ApiProviders = () => {
       {adding ? (
         <ProviderForm
           onCancel={() => setAdding(false)}
-          onCreated={async () => {
+          onCreated={async (created) => {
             setAdding(false)
             await reload()
+            // 第一个 API 建好后即成为默认：取其第一个模型，之后请求都带显式 provider
+            const list = await fetchProviders()
+            if (created?.id) {
+              const provider = list.find((item) => item.id === created.id)
+              const model = provider?.defaultModel || provider?.models[0]
+              if (provider && model) {
+                useModelChoice.getState().setGlobal({ providerId: provider.id, model })
+              }
+            }
             showToast({ key: 'apiProvidersAdded' })
           }}
         />
@@ -188,7 +199,7 @@ const ProviderForm = ({
   onCreated,
 }: {
   onCancel: () => void
-  onCreated: () => Promise<void>
+  onCreated: (created: ProviderInfo) => Promise<void>
 }) => {
   const t = useTranslate()
   const [name, setName] = useState('')
@@ -206,13 +217,13 @@ const ProviderForm = ({
     setBusy(true)
     setError('')
     try {
-      await createProvider({
+      const created = await createProvider({
         name: name.trim(),
         platform,
         apiKey: apiKey.trim(),
         ...(baseURL.trim() ? { baseURL: baseURL.trim() } : {}),
       })
-      await onCreated()
+      await onCreated(created)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

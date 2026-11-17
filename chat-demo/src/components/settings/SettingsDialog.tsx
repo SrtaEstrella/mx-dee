@@ -326,6 +326,7 @@ const CustomInstructionsSetting = () => {
         className={styles.customInstructionsInput}
         value={value}
         rows={4}
+        placeholder={t('settingsCustomInstructionsPlaceholder')}
         aria-label={t('settingsCustomInstructions')}
         onChange={(event) => setCustomInstructions(event.target.value)}
       />
@@ -336,8 +337,8 @@ const CustomInstructionsSetting = () => {
 
 /** 消息区宽度：固定几档，前台只给描述 */
 const WIDTH_OPTIONS = [
-  { value: 0, label: 'settingsWidthStandard' },
   { value: 680, label: 'settingsWidthNarrow' },
+  { value: 0, label: 'settingsWidthStandard' },
   { value: 1000, label: 'settingsWidthWide' },
   { value: 1240, label: 'settingsWidthWidest' },
 ] as const
