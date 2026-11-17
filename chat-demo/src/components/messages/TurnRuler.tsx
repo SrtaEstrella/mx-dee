@@ -32,6 +32,7 @@ export const TurnRuler = ({
   const t = useTranslate()
   const [active, setActive] = useState(0)
   const [open, setOpen] = useState(false)
+  const [usable, setUsable] = useState(false)
 
   /** 按 data-message-id 找元素；消息 id 是纯数字，逐条比对避免选择器转义问题 */
   const findNode = (id: string): HTMLElement | undefined => {
@@ -47,6 +48,9 @@ export const TurnRuler = ({
     if (!container) return
 
     const update = () => {
+      // 只有内容超出一屏时才值得导航；与滚动位置无关，滚到底也不会消失
+      setUsable(container.scrollHeight > container.clientHeight + 40)
+
       const top = container.getBoundingClientRect().top + ACTIVE_OFFSET
       let current = 0
       turns.forEach((turn, index) => {
@@ -66,7 +70,8 @@ export const TurnRuler = ({
     }
   }, [scrollRef, turns])
 
-  if (turns.length === 0) return null
+  // 一轮对话没有导航意义；页面放得下时也不显示，避免留下一条空胶囊
+  if (turns.length < 2 || !usable) return null
 
   const jump = (turn: Turn) => {
     const container = scrollRef.current
