@@ -54,7 +54,8 @@
   flex-direction: column;
   align-items: flex-end;
   box-sizing: border-box;
-  max-height: 250px;
+  /* 高度取表行高（30px）的整数倍，滚到任意位置都不会露出半行 */
+  max-height: 240px;
   padding: 0 8px 0 12px;
   overflow-y: auto;
   overscroll-behavior: contain;
