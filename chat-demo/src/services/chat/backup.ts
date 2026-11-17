@@ -47,7 +47,7 @@ export const exportHistory = (): Promise<{ name: string; blob: Blob }> =>
 export const importHistory = (
   file: File,
   mode: 'replace' | 'merge' = 'replace',
-  options: { minTurns?: number; includeImages?: boolean } = {}
+  options: { minTurns?: number; recentDays?: number; includeImages?: boolean } = {}
 ): Promise<number> =>
   enqueueBackup(async () => {
     const { checkArchiveFormat, importArchive } = await import('./history/importArchive.js')

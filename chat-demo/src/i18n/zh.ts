@@ -154,6 +154,8 @@ export const zh = {
   historyImportIncludeImages: '导入图片附件',
   historyImportMinTurns: '轮次下限',
   historyImportMinTurnsHint: '模型回复条数，0 表示不限',
+  historyImportRecentDays: '仅最近',
+  historyImportRecentDaysHint: '天内有活跃的会话，0 表示不限',
   historyImportMergeDescription: '只补入本地没有的会话；同一会话已存在时保留本地版本，附件按需补入。',
   historyImportDescription: '导入历史对话默认保留现有会话，只补入缺少的那些；取消勾选则整份替换。支持 DeepSeek 导出的 ZIP 文件。',
   historyImportedOne: '已导入 1 个对话',

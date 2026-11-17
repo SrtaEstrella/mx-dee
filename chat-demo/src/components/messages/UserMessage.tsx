@@ -45,6 +45,20 @@ export const UserMessage = memo(function UserMessage({
   const isMobile = useIsMobile()
   const canSend = !busy && (draft.trim() !== '' || message.files.length > 0)
 
+  // 进入编辑时把光标放到文本末尾：autoFocus 只负责聚焦，插入点默认在开头
+  useLayoutEffect(() => {
+    if (!editing) {
+      return
+    }
+    const textarea = textareaRef.current
+    if (!textarea) {
+      return
+    }
+    textarea.focus()
+    const end = textarea.value.length
+    textarea.setSelectionRange(end, end)
+  }, [editing])
+
   useLayoutEffect(() => {
     const textarea = textareaRef.current
     if (editing && textarea) {

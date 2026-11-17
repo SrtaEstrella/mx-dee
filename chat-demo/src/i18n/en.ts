@@ -160,6 +160,8 @@ export const en = {
   historyImportIncludeImages: 'Import image attachments',
   historyImportMinTurns: 'Min turns',
   historyImportMinTurnsHint: 'Model replies; 0 means no limit',
+  historyImportRecentDays: 'Active within',
+  historyImportRecentDaysHint: 'Days since last activity; 0 means no limit',
   historyImportMergeDescription:
     'Only adds chats that are not stored locally; an existing chat keeps its local version, and attachments are filled in as needed.',
   historyImportDescription:

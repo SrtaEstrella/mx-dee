@@ -363,6 +363,19 @@ const ImportConfirm = ({
         />
         <span className={styles.importHint}>{t('historyImportMinTurnsHint')}</span>
       </label>
+      <label className={styles.importOption}>
+        <span>{t('historyImportRecentDays')}</span>
+        <input
+          type="number"
+          min={0}
+          max={9999}
+          step={1}
+          className={styles.importNumber}
+          value={historyImport.recentDays}
+          onChange={(event) => historyImport.setRecentDays(Math.max(0, Number(event.target.value) || 0))}
+        />
+        <span className={styles.importHint}>{t('historyImportRecentDaysHint')}</span>
+      </label>
       <div className={styles.importConfirmText}>
         {historyImport.merge
           ? t('historyImportMergeDescription')
@@ -473,6 +486,7 @@ const useHistoryImport = () => {
   const [merge, setMerge] = useState(true)
   const [includeImages, setIncludeImages] = useState(true)
   const [minTurns, setMinTurns] = useState(0)
+  const [recentDays, setRecentDays] = useState(0)
   const [status, setStatus] = useState<Status>(null)
   const importing = useRef(false)
 
@@ -487,6 +501,7 @@ const useHistoryImport = () => {
     try {
       const count = await importHistory(file, merge ? 'merge' : 'replace', {
         minTurns,
+        recentDays,
         includeImages,
       })
       setStatus({ key: count === 1 ? 'historyImportedOne' : 'historyImported', params: { count } })
@@ -508,6 +523,8 @@ const useHistoryImport = () => {
     setIncludeImages,
     minTurns,
     setMinTurns,
+    recentDays,
+    setRecentDays,
     select: setFile,
     cancel: () => setFile(null),
     confirm,

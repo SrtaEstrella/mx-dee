@@ -76,6 +76,8 @@ export const checkArchiveFormat = async (file: File): Promise<void> => {
 export type ImportOptions = {
   /** 只导入模型回复条数不少于该值的会话，0 表示不限 */
   minTurns?: number
+  /** 只导入最近该天数内活跃过的会话，0 表示不限 */
+  recentDays?: number
   /** 是否保存图片原件；关闭后图片消息只保留文件名 */
   includeImages?: boolean
 }
@@ -89,7 +91,10 @@ export type ImportOptions = {
  */
 export const importArchive = async (file: File, options: ImportOptions = {}): Promise<void> => {
   const minTurns = Math.max(0, options.minTurns ?? 0)
+  const recentDays = Math.max(0, options.recentDays ?? 0)
   const includeImages = options.includeImages ?? true
+  // 各条件取交集；按最后活跃时间算，留一点余量避免边界抖动
+  const cutoff = recentDays > 0 ? Date.now() - recentDays * 86_400_000 : 0
   if (!(await isZipFile(file))) {
     fail('backupUnrecognized')
   }
@@ -130,8 +135,8 @@ export const importArchive = async (file: File, options: ImportOptions = {}): Pr
           fail('backupIncomplete')
         }
         const turns = local.session.messages.filter((message) => message.role === 'assistant').length
-        if (turns < minTurns) {
-          // 轮次不足：整段跳过，其附件也不再有映射
+        if (turns < minTurns || (cutoff > 0 && local.session.updatedAt < cutoff)) {
+          // 任一条件不满足就整段跳过，其附件也不再有映射
           continue
         }
         imported.add(sessionId)
