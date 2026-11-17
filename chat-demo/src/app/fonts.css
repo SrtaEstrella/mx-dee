@@ -1,0 +1,11 @@
+/**
+ * Inter 自托管字体（SIL OFL 1.1），来自 @fontsource/inter 的 latin 子集。
+ * 每个字重一份 woff2，中文由 --dsw-font-family 的 CJK 回退字体承接。
+ *
+ * 引入的字重：400 正文 / 500 中等强调 / 600 半粗标题 / 700 粗体，以及 400 斜体。
+ */
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-400-italic.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/inter/latin-700.css';

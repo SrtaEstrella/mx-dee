@@ -1,11 +1,26 @@
+# 依赖与产物
 node_modules/
-dist/
-build/
-.pnpm-store/
-.cache/
-*.log
-.DS_Store
+chat-demo/node_modules/
+chat-demo/dist/
+
+# 本地密钥与验证产物
+.env.local
 .env
-.env.*
-!.env.example
-tmp/
+.verify/
+*.log
+logs/
+config/
+
+# 演示包（含真实对话内容，不提交）
+demo/*.zip
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+
+# 上游 chat-demo 的历史副本（用于 diff，不提交）
+.upstream/
+
+# 本地文档与演示包（含真实会话内容，不入库、不推送）
+docs/
+demo/

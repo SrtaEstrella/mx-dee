@@ -1,0 +1,11 @@
+# 仓库内存 LF，检出时用平台默认（Windows 上为 CRLF），不做全树强制转换
+* text=auto
+
+*.ps1 text eol=crlf
+*.vbs text eol=crlf
+*.bat text eol=crlf
+
+*.ico binary
+*.png binary
+*.webmanifest text
+*.zip binary
