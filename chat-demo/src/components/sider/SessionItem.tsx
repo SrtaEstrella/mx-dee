@@ -6,6 +6,7 @@ import {
   IconEllipsisOutline16,
   IconPinOutline16,
   IconTrashOutline16,
+  IconUnpinOutline16,
 } from '../base/icons.js'
 import { renameSession, selectSession, setSessionPinned } from '../../services/chat/store.js'
 import type { SessionSummary } from '../../services/chat/types.js'
@@ -67,7 +68,7 @@ export const SessionItem = memo(function SessionItem({
             {
               key: 'pin',
               label: session.pinned ? t('unpinSession') : t('pinSession'),
-              icon: <IconPinOutline16 />,
+              icon: session.pinned ? <IconUnpinOutline16 /> : <IconPinOutline16 />,
               onSelect: () => setSessionPinned(session.id, !session.pinned),
             },
             {
