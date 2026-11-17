@@ -181,6 +181,8 @@ export type CreateMessageRequest = {
   tools: (DeepseekWebSearchTool | DeepseekReadUrlTool)[]
   safety_check: { level: 'high' }
   title?: { enabled: boolean }
+  /** 标题兜底等短请求用；常规对话不设 */
+  max_tokens?: number
 }
 
 // ---------- 响应：流式事件 ----------

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { memo, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   IconGlobeLanguageOutline14,
   IconPaperclipOutline16,
@@ -8,6 +8,7 @@ import {
   IconThinkOutline14,
 } from '../base/icons.js'
 import { setSearch, setThinking, useSettings } from '../../services/settings.js'
+import { fetchProviders } from '../../services/providers.js'
 import { useIsMobile } from '../../app/viewport.js'
 import { sendMessage, stopReply, useChatStore } from '../../services/chat/store.js'
 import {
@@ -54,6 +55,21 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
   const importingHistory = useChatStore((state) => state.importingHistory)
   const isMobile = useIsMobile()
   const search = useSettings((state) => state.search)
+  /** 联网与标题依赖官方通道；只有 OCGO 时这一项不可用 */
+  const [officialAvailable, setOfficialAvailable] = useState<boolean | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void fetchProviders()
+      .then((list) => {
+        if (!cancelled) {
+          setOfficialAvailable(list.some((p) => p.platform === 'official' && p.hasKey))
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const togglesRef = useRef<HTMLDivElement>(null)
@@ -215,13 +231,23 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
               <span className={styles.toggleLabel}>{t('thinkingSwitch')}</span>
             </button>
           </Tooltip>
-          <Tooltip content={t('deactivatedSearchTooltip')}>
+          <Tooltip
+            content={officialAvailable === false ? t('searchNeedsOfficial') : t('deactivatedSearchTooltip')}
+          >
             <button
               type="button"
-              className={clsx(styles.toggle, search && styles.selected)}
+              className={clsx(styles.toggle, search && styles.selected, officialAvailable === false && styles.toggleDisabled)}
               aria-label={t('search')}
               aria-pressed={search}
-              onClick={() => setSearch(!search)}
+              aria-disabled={officialAvailable === false}
+              onClick={() => {
+                // 没有官方通道时不切换，直接把原因说清楚
+                if (officialAvailable === false) {
+                  showToast({ key: 'searchNeedsOfficial' })
+                  return
+                }
+                setSearch(!search)
+              }}
             >
               <IconGlobeLanguageOutline14 />
               <span className={styles.toggleLabel}>{t('search')}</span>

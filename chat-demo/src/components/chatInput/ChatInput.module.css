@@ -251,6 +251,12 @@
   min-width: 0;
 }
 
+/* 通道不支持时按钮仍可点，点了给出原因 */
+.toggleDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .collapsedToggles .toggleLabel {
   display: none;
 }

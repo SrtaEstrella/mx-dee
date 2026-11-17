@@ -438,6 +438,8 @@ async function handleMessages(req, res) {
 
   let provider
   let reasons = []
+  /** 没有官方工具通道时，联网与标题被忽略 */
+  let degradeTools = false
   if (requestedUsable) {
     if (requestedProvider.platform === 'official') {
       // 官方 provider 自带服务端工具能力，所有场景统一使用它
@@ -455,14 +457,42 @@ async function handleMessages(req, res) {
       if (CFG.hybridSearch && hybridAllowed && official && providerKey(official)) {
         provider = requestedProvider
         reasons = ['指定 provider（网关内执行官方搜索）', ...forcedReasons]
-      } else {
+      } else if (official && providerKey(official)) {
         provider = official
         reasons = ['指定 provider 无服务端工具，回落工具通道', ...forcedReasons]
+      } else if (hasAttachmentBlock(body)) {
+        // 附件需要官方通道做版面解析，没有官方时明确报错，不静默丢内容
+        return sendJson(res, 400, {
+          error: {
+            type: 'attachment_needs_official',
+            message: '当前没有可用的官方 API，无法解析该附件',
+          },
+        })
+      } else {
+        // 没有官方通道时，联网与标题静默降级：仍用选中的 provider 作答
+        provider = requestedProvider
+        reasons = ['无官方工具通道，已忽略联网', ...forcedReasons]
+        degradeTools = true
       }
     }
   } else if (forcedReasons.length > 0) {
-    provider = toolsProvider()
-    reasons = requestedProvider ? ['指定 provider 不可用', ...forcedReasons] : forcedReasons
+    const official = toolsProvider()
+    if (official && providerKey(official)) {
+      provider = official
+      reasons = requestedProvider ? ['指定 provider 不可用', ...forcedReasons] : forcedReasons
+    } else if (hasAttachmentBlock(body)) {
+      return sendJson(res, 400, {
+        error: {
+          type: 'attachment_needs_official',
+          message: '当前没有可用的官方 API，无法解析该附件',
+        },
+      })
+    } else {
+      // 只有 OCGO 时联网无通道可用：降级为普通请求
+      provider = defaultProvider()
+      reasons = ['无官方工具通道，已忽略联网', ...forcedReasons]
+      degradeTools = true
+    }
   } else {
     provider = defaultProvider()
     reasons = requestedProvider ? ['指定 provider 不可用，回落默认'] : ['默认']
@@ -535,6 +565,10 @@ async function handleMessages(req, res) {
   const key = providerKey(provider)
   const upstreamBody = { ...body }
   if (provider.platform === 'ocgo') stripForOcgo(body, upstreamBody)
+  if (degradeTools) {
+    delete upstreamBody.tools
+    delete upstreamBody.title
+  }
   if (CFG.stripSafety && upstreamBody.safety_check) delete upstreamBody.safety_check
 
   // 请求的模型不在该 provider 的列表里时改用其默认模型

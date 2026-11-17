@@ -663,6 +663,47 @@ export const sendMessage = (targetSessionId: string | null) => {
   return true
 }
 
+/** 上游没给标题时（例如只有 OCGO 的普通链路），用会话自己的 provider 补一个 */
+const generateFallbackTitle = async (sessionId: string, question: string) => {
+  const choice = resolveChoice(sessionId)
+  try {
+    const events = streamMessage(
+      useSettings.getState().apiKey ?? '',
+      {
+        model: choice?.model ?? MODEL,
+        system: buildSystemPrompt(''),
+        max_tokens: 32,
+        thinking: { type: 'disabled' },
+        tools: [],
+        safety_check: { level: 'high' },
+        messages: [
+          {
+            role: 'user',
+            content:
+              '为这段对话起一个不超过 12 个字的中文标题，只输出标题本身，不要引号、标点或解释。\n\n' +
+              `用户的问题：${question.slice(0, 200)}`,
+          },
+        ],
+      },
+      new AbortController().signal,
+      { providerId: choice?.providerId }
+    )
+    let text = ''
+    for await (const event of events) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        text += event.delta.text
+      }
+    }
+    const title = text.trim().split('\n')[0].replace(/^[「『"']+|[」』"']+$/g, '').trim().slice(0, 40)
+    const session = getSession(sessionId)
+    if (title && session && !session.title) {
+      renameSession(sessionId, title)
+    }
+  } catch {
+    // 标题失败不影响对话本身
+  }
+}
+
 /** 重新生成当前路径上的回答：在原问题下新增版本，不覆盖旧回答和后续对话。 */
 export const regenerateReply = (sessionId: string, messageId?: string) => {
   if (get().importingHistory || deletingSessions.has(sessionId)) {
@@ -1086,6 +1127,12 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
           }
         }
         reply = settleReply(reply, 'done', Date.now())
+        // 普通链路（例如只有 OCGO）拿不到上游标题时，用会话自己的 provider 补一个
+        const asked = request.question
+        if (titleRequests.has(controller) && !getSession(sessionId)?.title && asked.content) {
+          titleRequests.delete(controller)
+          void generateFallbackTitle(sessionId, asked.content)
+        }
         break
       } catch (error) {
         if (controller.signal.aborted) {
