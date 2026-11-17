@@ -133,7 +133,7 @@
   color: var(--dsw-alias-label-secondary);
 }
 
-/* 多选模式的标题行：占据「新建对话」的位置 */
+/* 多选模式的标题行：与「新建对话」同高同位置，列表不会下移 */
 .batchHeader {
   display: flex;
   align-items: center;
@@ -141,7 +141,7 @@
   gap: 8px;
   box-sizing: border-box;
   height: 40px;
-  margin: 0 10px 8px;
+  margin: 0 10px;
   padding: 0 0 0 8px;
 }
 
