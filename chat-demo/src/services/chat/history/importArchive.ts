@@ -89,7 +89,11 @@ export type ImportOptions = {
  * 写入导入暂存存储；调用方负责先清空暂存，成功后替换正式数据，失败时清理暂存。
  * 轮次不足的会话与（可选）全部图片会被跳过。
  */
-export const importArchive = async (file: File, options: ImportOptions = {}): Promise<void> => {
+export const importArchive = async (
+  file: File,
+  options: ImportOptions = {},
+  onProgress?: (count: number) => void
+): Promise<void> => {
   const minTurns = Math.max(0, options.minTurns ?? 0)
   const recentDays = Math.max(0, options.recentDays ?? 0)
   const includeImages = options.includeImages ?? true
@@ -144,6 +148,7 @@ export const importArchive = async (file: File, options: ImportOptions = {}): Pr
           images.set(imagePath, id)
         }
         await db.addStagingSession(local.session)
+        onProgress?.(imported.size)
       } else if (path === INDEX_PATH && !index) {
         index = readSessionIndex(await readJson(entry))
       } else if (/^chat_sessions\/[^/]+_files\//.test(path)) {

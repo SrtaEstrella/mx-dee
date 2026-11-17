@@ -312,36 +312,50 @@ const TtsVoiceSetting = () => {
   )
 }
 
-/** 覆盖导入的二次确认，叠在设置弹窗上 */
+/** 覆盖导入的二次确认，叠在设置弹窗上；导入过程中留在原地显示进度 */
 const ImportConfirm = ({
   historyImport,
 }: {
   historyImport: ReturnType<typeof useHistoryImport>
 }) => {
   const t = useTranslate()
+  const busy = historyImport.busy
   return (
     <Modal
       title={t('historyImportConfirmTitle')}
       className={styles.importConfirm}
-      onClose={historyImport.cancel}
+      // 导入中不允许关闭，避免误以为已取消
+      onClose={busy ? () => {} : historyImport.cancel}
       footer={
         <>
-          <Button variant="outlined" size="m" autoFocus onClick={historyImport.cancel}>
+          <Button variant="outlined" size="m" autoFocus disabled={busy} onClick={historyImport.cancel}>
             {t('cancel')}
           </Button>
-          <Button variant="dangerOutlined" size="m" onClick={() => void historyImport.confirm()}>
-            {t('historyImportConfirm')}
-          </Button>        </>
+          <Button variant="dangerOutlined" size="m" disabled={busy} onClick={() => void historyImport.confirm()}>
+            {busy ? t('historyImporting') : t('historyImportConfirm')}
+          </Button>
+        </>
       }
     >
-      <label className={styles.importMerge}>
-        <input
-          type="checkbox"
-          checked={historyImport.merge}
-          onChange={(event) => historyImport.setMerge(event.target.checked)}
-        />
-        <span>{t('historyImportMerge')}</span>
-      </label>
+      {busy ? (
+        <div className={styles.importProgress} role="status" aria-live="polite">
+          <span>{t('historyImporting')}</span>
+          {historyImport.progress > 0 ? (
+            <span className={styles.importProgressCount}>
+              {t('historyImportingCount', { count: historyImport.progress })}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+      <fieldset className={styles.importFields} disabled={busy}>
+        <label className={styles.importMerge}>
+          <input
+            type="checkbox"
+            checked={historyImport.merge}
+            onChange={(event) => historyImport.setMerge(event.target.checked)}
+          />
+          <span>{t('historyImportMerge')}</span>
+        </label>
       <label className={styles.importMerge}>
         <input
           type="checkbox"
@@ -376,6 +390,7 @@ const ImportConfirm = ({
         />
         <span className={styles.importHint}>{t('historyImportRecentDaysHint')}</span>
       </label>
+      </fieldset>
       <div className={styles.importConfirmText}>
         {historyImport.merge
           ? t('historyImportMergeDescription')
@@ -479,7 +494,7 @@ const SettingCell = ({
   )
 }
 
-/** 选文件后先提示覆盖；确认后才检查文件并执行导入，任何错误都提示导入失败。 */
+/** 选文件后先提示覆盖；确认后弹窗留在原地显示进度，导入结束才关闭。 */
 const useHistoryImport = () => {
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
@@ -487,6 +502,7 @@ const useHistoryImport = () => {
   const [includeImages, setIncludeImages] = useState(true)
   const [minTurns, setMinTurns] = useState(0)
   const [recentDays, setRecentDays] = useState(0)
+  const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState<Status>(null)
   const importing = useRef(false)
 
@@ -495,27 +511,41 @@ const useHistoryImport = () => {
       return
     }
     importing.current = true
-    setFile(null)
     setBusy(true)
+    setProgress(0)
     setStatus(null)
     try {
-      const count = await importHistory(file, merge ? 'merge' : 'replace', {
-        minTurns,
-        recentDays,
-        includeImages,
-      })
+      const count = await importHistory(
+        file,
+        merge ? 'merge' : 'replace',
+        { minTurns, recentDays, includeImages },
+        setProgress
+      )
       setStatus({ key: count === 1 ? 'historyImportedOne' : 'historyImported', params: { count } })
+      showToast({ key: count === 1 ? 'historyImportedOne' : 'historyImported', params: { count } })
+      setFile(null)
     } catch {
       setStatus({ key: 'historyImportFailed', error: true })
+      showToast({ key: 'historyImportFailed', type: 'error' })
+      setFile(null)
     } finally {
       importing.current = false
       setBusy(false)
+      setProgress(0)
     }
+  }
+
+  const cancel = () => {
+    if (busy) {
+      return
+    }
+    setFile(null)
   }
 
   return {
     file,
     busy,
+    progress,
     status,
     merge,
     setMerge,
@@ -526,7 +556,7 @@ const useHistoryImport = () => {
     recentDays,
     setRecentDays,
     select: setFile,
-    cancel: () => setFile(null),
+    cancel,
     confirm,
   }
 }

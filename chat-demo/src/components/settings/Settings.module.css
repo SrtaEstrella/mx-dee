@@ -412,6 +412,34 @@
   padding-bottom: 24px;
 }
 
+.importProgress {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+}
+
+.importProgressCount {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+}
+
+/* 导入中把筛选项整体置灰，避免看起来还能改 */
+.importFields {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.importFields:disabled {
+  opacity: 0.5;
+}
+
 .importMerge {
   display: flex;
   align-items: center;
