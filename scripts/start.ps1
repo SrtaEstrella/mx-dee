@@ -14,7 +14,7 @@
 #   .\scripts\start.ps1 -Route official  # force everything to the official API
 
 param(
-  [int]$Port = 8090,
+  [int]$Port = 0,
   [string]$Route = 'auto',
   [string]$Root = 'chat-demo/dist'
 )
@@ -47,4 +47,9 @@ if (-not (Test-Path $Root)) {
 }
 
 Write-Host ""
-node server.mjs --port $Port --root $Root --route $Route
+# 未指定 -Port 时不传该参数，由服务端读 config/app.json 里的端口
+$nodeArgs = @('--root', $Root, '--route', $Route)
+if ($Port -gt 0) {
+  $nodeArgs = @('--port', $Port) + $nodeArgs
+}
+node server.mjs @nodeArgs

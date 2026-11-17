@@ -37,9 +37,14 @@
   }
 }
 
+/* 消息区：字号按用户偏好覆盖，影响正文、思考与工具块里的文字 */
+/* 消息区：字号按用户偏好覆盖，影响正文、思考与工具块里的文字 */
 .column {
   width: calc(var(--message-list-max-width) - 2 * var(--message-list-padding-horizontal));
   max-width: calc(100% - 40px);
   margin: 0 auto;
   padding-bottom: 24px;
+  font-size: var(--message-font-size, 14px);
+  --ds-font-size-m: var(--message-font-size, 14px);
+}
 }

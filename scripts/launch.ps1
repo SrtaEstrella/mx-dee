@@ -9,7 +9,7 @@
 #   powershell ... -File scripts\launch.ps1 -NoBrowser     # start only
 
 param(
-  [int]$Port = 8090,
+  [int]$Port = 0,
   [switch]$NoBrowser
 )
 
@@ -17,6 +17,25 @@ $ErrorActionPreference = 'Stop'
 
 # 脚本位于 scripts\，项目根目录是它的上一级
 $root = Split-Path -Parent $PSScriptRoot
+
+# config/app.json 里的端口与「启动时打开浏览器」是界面可改的默认值，命令行参数优先
+$appConfig = $null
+try {
+  $appConfig = Get-Content (Join-Path $root 'config\app.json') -Raw -ErrorAction Stop | ConvertFrom-Json
+} catch {
+  $appConfig = $null
+}
+if ($Port -le 0) {
+  $Port = if ($appConfig -and $appConfig.port) { [int]$appConfig.port } else { 8090 }
+}
+$openBrowser = if ($PSBoundParameters.ContainsKey('NoBrowser')) {
+  -not $NoBrowser
+} elseif ($appConfig -and $appConfig.openBrowser -eq $false) {
+  $false
+} else {
+  $true
+}
+
 $url = "http://127.0.0.1:$Port/"
 $logDir = Join-Path $root 'logs'
 $logOut = Join-Path $logDir 'gateway.log'
@@ -101,7 +120,7 @@ function Start-Gateway {
 
 try {
   if (Start-Gateway) {
-    if (-not $NoBrowser) { Start-Process $url }
+    if ($openBrowser) { Start-Process $url }
     exit 0
   }
   exit 1

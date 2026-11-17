@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useTranslate } from '../i18n/index.js'
-import { useSettings } from '../services/settings.js'
+import { applyLayoutSettings, useSettings } from '../services/settings.js'
 import { useIsMobile, useMobileViewport, usePreventPageScroll } from './viewport.js'
 import {
   bindChatPersistence,
@@ -86,6 +86,9 @@ const searchScope = useSessionSearch((state) => state.scope)
   useEffect(() => {
     document.documentElement.lang = locale
   }, [locale])
+
+  // 宽度与字号是用户偏好，启动时套用一次
+  useEffect(() => applyLayoutSettings(), [])
 
   // 文件数、存储空间达到上限时，附件上只显示「上传失败」，原因用 toast 说明
   useEffect(() => onUploadNotice(showToast), [])

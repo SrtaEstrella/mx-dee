@@ -440,6 +440,40 @@
   opacity: 0.5;
 }
 
+/* 自定义指令：多行输入占满整行 */
+.customInstructions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+}
+
+.customInstructionsLabel {
+  font-size: 14px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.customInstructionsInput {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: 8px;
+  background: var(--dsw-specific-input-major);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  resize: vertical;
+}
+
+/* 网关设置：端口输入与「启动时打开浏览器」并排 */
+.gatewayActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .importMerge {
   display: flex;
   align-items: center;

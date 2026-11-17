@@ -20,6 +20,12 @@ type Settings = {
   siderCollapsed: boolean
   /** 侧栏「置顶」分组是否收起 */
   pinnedCollapsed: boolean
+  /** 附加在固定身份声明之后的自定义指令，空串表示不加 */
+  customInstructions: string
+  /** 消息区最大宽度（px），0 表示用默认值 */
+  messageWidth: number
+  /** 消息正文与思考内容的字号（px） */
+  messageFontSize: number
 }
 
 const KEYS = {
@@ -32,6 +38,9 @@ const KEYS = {
   search: 'chat-demo:search',
   siderCollapsed: 'chat-demo:sider-collapsed',
   pinnedCollapsed: 'chat-demo:pinned-collapsed',
+  customInstructions: 'chat-demo:custom-instructions',
+  messageWidth: 'chat-demo:message-width',
+  messageFontSize: 'chat-demo:message-font-size',
 } as const
 
 const read = (key: string) => {
@@ -94,6 +103,14 @@ const initialTtsVoice = (): TtsVoice => (read(KEYS.ttsVoice) === 'tide' ? 'tide'
 /** 网关不校验前端传来的密钥，这里给一个固定占位值即可 */
 const PLACEHOLDER_API_KEY = 'local'
 
+/** 消息区宽度：0 表示用默认值，否则限制在 480–1600px */
+export const clampWidth = (value: number) =>
+  Number.isFinite(value) && value > 0 ? Math.min(1600, Math.max(480, Math.round(value))) : 0
+
+/** 正文字号限制在 12–20px */
+export const clampFontSize = (value: number) =>
+  Number.isFinite(value) && value >= 12 && value <= 20 ? Math.round(value) : 14
+
 export const useSettings = create<Settings>(() => ({
   apiKey: read(KEYS.apiKey) ?? PLACEHOLDER_API_KEY,
   locale: initialLocale(),
@@ -104,6 +121,9 @@ export const useSettings = create<Settings>(() => ({
   search: read(KEYS.search) === 'true',
   siderCollapsed: read(KEYS.siderCollapsed) === 'true',
   pinnedCollapsed: read(KEYS.pinnedCollapsed) === 'true',
+  customInstructions: read(KEYS.customInstructions) ?? '',
+  messageWidth: clampWidth(Number(read(KEYS.messageWidth))),
+  messageFontSize: clampFontSize(Number(read(KEYS.messageFontSize))),
 }))
 
 export const setLocale = (locale: Locale) => {
@@ -150,4 +170,35 @@ export const setSiderCollapsed = (siderCollapsed: boolean) => {
 export const setPinnedCollapsed = (pinnedCollapsed: boolean) => {
   write(KEYS.pinnedCollapsed, String(pinnedCollapsed))
   useSettings.setState({ pinnedCollapsed })
+}
+
+export const setCustomInstructions = (customInstructions: string) => {
+  write(KEYS.customInstructions, customInstructions)
+  useSettings.setState({ customInstructions })
+}
+
+export const setMessageWidth = (value: number) => {
+  const messageWidth = clampWidth(value)
+  write(KEYS.messageWidth, String(messageWidth))
+  useSettings.setState({ messageWidth })
+  applyLayoutSettings()
+}
+
+export const setMessageFontSize = (value: number) => {
+  const messageFontSize = clampFontSize(value)
+  write(KEYS.messageFontSize, String(messageFontSize))
+  useSettings.setState({ messageFontSize })
+  applyLayoutSettings()
+}
+
+/** 把宽度与字号写到根元素上的 CSS 变量，样式表直接用它们 */
+export const applyLayoutSettings = () => {
+  const { messageWidth, messageFontSize } = useSettings.getState()
+  const root = document.documentElement.style
+  if (messageWidth > 0) {
+    root.setProperty('--message-list-max-width', `${messageWidth}px`)
+  } else {
+    root.removeProperty('--message-list-max-width')
+  }
+  root.setProperty('--message-font-size', `${messageFontSize}px`)
 }

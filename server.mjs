@@ -26,7 +26,7 @@
  */
 
 import { createServer } from 'node:http'
-import { createReadStream } from 'node:fs'
+import { createReadStream, readFileSync } from 'node:fs'
 import { stat, readFile, writeFile, mkdir } from 'node:fs/promises'
 import { extname, join, normalize, resolve, sep, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -97,9 +97,36 @@ const pickEnv = (...names) => {
   return null
 }
 
+/** 应用级设置存在 config/app.json：端口与「启动时是否打开浏览器」 */
+const appSettingsPath = join(__dirname, 'config', 'app.json')
+const clampPort = (value) => {
+  const port = Number(value)
+  return Number.isInteger(port) && port > 0 && port < 65536 ? port : 8090
+}
+const readAppSettings = async () => {
+  try {
+    const raw = JSON.parse(readFileSync(appSettingsPath, 'utf8'))
+    return { port: clampPort(raw.port), openBrowser: raw.openBrowser !== false }
+  } catch {
+    return { port: 8090, openBrowser: true }
+  }
+}
+const writeAppSettings = async (next) => {
+  await mkdir(dirname(appSettingsPath), { recursive: true })
+  await writeFile(appSettingsPath, `${JSON.stringify(next, null, 2)}\n`, 'utf8')
+}
+/** CFG 是同步构造的，端口只能同步读一次 */
+const readPortSync = () => {
+  try {
+    return clampPort(JSON.parse(readFileSync(appSettingsPath, 'utf8')).port)
+  } catch {
+    return 8090
+  }
+}
+
 const CFG = {
   host: arg('host', '127.0.0.1'),
-  port: Number(arg('port', 8090)),
+  port: Number(arg('port', readPortSync())),
   root: resolve(arg('root', join(__dirname, 'chat-demo', 'dist'))),
   configDir: resolve(arg('config', join(__dirname, 'config'))),
   get configPath() {
@@ -835,6 +862,21 @@ const server = createServer(async (req, res) => {
 
     if (pathname.startsWith('/api/v1/tools/')) {
       return await passthroughOfficial(req, res, pathname.slice('/api'.length))
+    }
+
+    if (pathname === '/api/app-settings' && req.method === 'GET') {
+      return sendJson(res, 200, await readAppSettings())
+    }
+    if (pathname === '/api/app-settings' && req.method === 'PUT') {
+      const raw = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+      const current = await readAppSettings()
+      const next = {
+        port: clampPort(raw.port ?? current.port),
+        openBrowser: typeof raw.openBrowser === 'boolean' ? raw.openBrowser : current.openBrowser,
+      }
+      await writeAppSettings(next)
+      // 端口要重启网关才生效，这里只回报写入结果
+      return sendJson(res, 200, { ...next, restartRequired: next.port !== CFG.port })
     }
 
     if (pathname === '/api/health') {

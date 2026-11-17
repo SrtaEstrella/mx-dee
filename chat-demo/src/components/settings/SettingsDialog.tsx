@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   IconApiOutline16,
   IconDarkOutline16,
@@ -18,10 +18,14 @@ import {
 } from '../../services/chat/backup.js'
 import { useChatStore } from '../../services/chat/store.js'
 import { regionCodes, getRegionName, provinces } from '../../services/location.js'
+import { loadAppSettings, saveAppSettings, useAppSettings } from '../../services/appSettings.js'
 import {
   isChineseBrowser,
+  setCustomInstructions,
   setLocale,
   setLocation,
+  setMessageFontSize,
+  setMessageWidth,
   setThemePreference,
   setTtsVoice,
   useSettings,
@@ -96,6 +100,10 @@ const SettingsContent = () => {
             <>
               <ThemeSetting />
               <LocaleSetting />
+              <GatewaySetting />
+              <MessageWidthSetting />
+              <MessageFontSizeSetting />
+              <CustomInstructionsSetting />
               <TtsVoiceSetting />
               <LocationSetting />
             </>
@@ -262,6 +270,126 @@ const LocationSetting = () => {
             />
           )}
         </div>
+      }
+    />
+  )
+}
+
+/** 网关端口与启动行为：写入 config/app.json，端口改动需重启网关 */
+const GatewaySetting = () => {
+  const t = useTranslate()
+  const settings = useAppSettings((state) => state.settings)
+  const [restart, setRestart] = useState(false)
+  useEffect(() => {
+    void loadAppSettings()
+  }, [])
+  const save = async (next: { port?: number; openBrowser?: boolean }) => {
+    if (!settings) {
+      return
+    }
+    const required = await saveAppSettings({ ...settings, ...next })
+    if (required === null) {
+      showToast({ key: 'gatewaySettingSaveFailed', type: 'error' })
+      return
+    }
+    setRestart(required)
+  }
+  return (
+    <SettingCell
+      label={t('settingsGatewayPort')}
+      description={restart ? t('settingsGatewayRestartHint') : t('settingsGatewayPortHint')}
+      status={null}
+      action={
+        <div className={styles.gatewayActions}>
+          <input
+            type="number"
+            className={styles.importNumber}
+            min={1024}
+            max={65535}
+            step={1}
+            value={settings?.port ?? ''}
+            aria-label={t('settingsGatewayPort')}
+            onChange={(event) => void save({ port: Number(event.target.value) || 8090 })}
+          />
+          <label className={styles.importMerge}>
+            <input
+              type="checkbox"
+              checked={settings?.openBrowser ?? true}
+              onChange={(event) => void save({ openBrowser: event.target.checked })}
+            />
+            <span>{t('settingsGatewayOpenBrowser')}</span>
+          </label>
+        </div>
+      }
+    />
+  )
+}
+
+/** 自定义指令：固定身份句之后追加的用户指令 */
+const CustomInstructionsSetting = () => {
+  const t = useTranslate()
+  const value = useSettings((state) => state.customInstructions)
+  return (
+    <div className={styles.customInstructions}>
+      <div className={styles.customInstructionsLabel}>{t('settingsCustomInstructions')}</div>
+      <textarea
+        className={styles.customInstructionsInput}
+        value={value}
+        rows={4}
+        placeholder={t('settingsCustomInstructionsPlaceholder')}
+        aria-label={t('settingsCustomInstructions')}
+        onChange={(event) => setCustomInstructions(event.target.value)}
+      />
+      <div className={styles.importHint}>{t('settingsCustomInstructionsHint')}</div>
+    </div>
+  )
+}
+
+/** 消息区宽度：0 表示跟随默认值 */
+const MessageWidthSetting = () => {
+  const t = useTranslate()
+  const width = useSettings((state) => state.messageWidth)
+  return (
+    <SettingCell
+      label={t('settingsMessageWidth')}
+      description={t('settingsMessageWidthHint')}
+      status={null}
+      action={
+        <input
+          type="number"
+          className={styles.importNumber}
+          min={480}
+          max={1600}
+          step={20}
+          value={width || ''}
+          placeholder={t('settingsMessageWidthAuto')}
+          aria-label={t('settingsMessageWidth')}
+          onChange={(event) => setMessageWidth(Number(event.target.value) || 0)}
+        />
+      }
+    />
+  )
+}
+
+/** 正文字号 */
+const MessageFontSizeSetting = () => {
+  const t = useTranslate()
+  const size = useSettings((state) => state.messageFontSize)
+  return (
+    <SettingCell
+      label={t('settingsMessageFontSize')}
+      status={null}
+      action={
+        <input
+          type="number"
+          className={styles.importNumber}
+          min={12}
+          max={20}
+          step={1}
+          value={size}
+          aria-label={t('settingsMessageFontSize')}
+          onChange={(event) => setMessageFontSize(Number(event.target.value) || 14)}
+        />
       }
     />
   )
