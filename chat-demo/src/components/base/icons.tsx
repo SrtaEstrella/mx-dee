@@ -1,3 +1,13 @@
+export const IconPinOutline16 = () => (
+  <svg width={16} height={16} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M9.4 1.6C10.09 1.6 10.45 2.4 9.96 2.89L9.02 3.83L9.86 5.51C10.05 5.89 10.29 6.24 10.57 6.55L11.6 7.7C12.06 8.21 11.7 9.04 11.02 9.04H8.86L6.4 13.3C6.26 13.55 5.9 13.55 5.76 13.3L5.22 12.35C5.13 12.19 5.13 11.99 5.22 11.83L7.14 9.04H4.98C4.3 9.04 3.94 8.21 4.4 7.7L5.43 6.55C5.71 6.24 5.95 5.89 6.14 5.51L6.98 3.83L6.04 2.89C5.55 2.4 5.91 1.6 6.6 1.6H9.4Z"
+      fill="currentColor"
+    />
+    <path d="M8 9.6V14.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+  </svg>
+)
+
 export const IconCheckOutline16 = () => (
   <svg width={16} height={16} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
