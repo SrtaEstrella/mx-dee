@@ -62,7 +62,7 @@ const messagesHeaders = (provider, key) =>
  *
  * OCGO 不认官方的 title 参数，但标题只是一次普通生成，不需要任何服务端工具能力。
  */
-async function titleFrom(provider, key, question) {
+export async function titleFrom(provider, key, question) {
   if (!provider || !key || !question) return null
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 15_000)

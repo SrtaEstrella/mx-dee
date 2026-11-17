@@ -31,7 +31,7 @@ import { stat, readFile, writeFile, mkdir } from 'node:fs/promises'
 import { extname, join, normalize, resolve, sep, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
-import { runHybrid } from './gateway/hybrid.mjs'
+import { runHybrid, titleFrom } from './gateway/hybrid.mjs'
 import { createAttachmentStore, parseMultipart, rewriteAttachments } from './gateway/attachments.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -313,6 +313,18 @@ const lastUserHasUrl = (body) => {
   return lastUser ? containsUrl(lastUser.content) : false
 }
 
+/** 最后一条用户消息的纯文本，用于生成标题 */
+const lastUserText = (body) => {
+  if (!Array.isArray(body?.messages)) return ''
+  const lastUser = [...body.messages].reverse().find((m) => m?.role === 'user')
+  if (!lastUser) return ''
+  if (typeof lastUser.content === 'string') return lastUser.content
+  return (Array.isArray(lastUser.content) ? lastUser.content : [])
+    .filter((block) => block?.type === 'text')
+    .map((block) => block.text)
+    .join(' ')
+}
+
 const toolNames = (body) =>
   new Set(
     (Array.isArray(body?.tools) ? body.tools : [])
@@ -373,7 +385,12 @@ const stripForOcgo = (body, target) => {
 
 const joinUrl = (base, path) => base.replace(/\/+$/, '') + path
 
-async function pipeUpstream(upstream, res) {
+/**
+ * 把上游 SSE 原样转发；给了 titlePromise 时，在 message_delta 帧上补一个 title。
+ * 标题是协议自带字段（message_delta.delta.title），OCGO 不接受该请求参数，
+ * 所以在转发阶段合成，客户端无需区分走哪家。
+ */
+async function pipeUpstream(upstream, res, { titlePromise } = {}) {
   const ac = new AbortController()
   res.on('close', () => {
     if (!res.writableEnded) ac.abort()
@@ -395,18 +412,79 @@ async function pipeUpstream(upstream, res) {
     return
   }
 
+  if (!titlePromise) {
+    try {
+      for await (const chunk of upstream.body) {
+        if (res.writableEnded) break
+        if (!res.write(chunk)) {
+          await new Promise((r) => res.once('drain', r))
+        }
+      }
+    } catch (err) {
+      if (err?.name !== 'AbortError') log('  上游流中断:', err.message)
+    } finally {
+      if (!res.writableEnded) res.end()
+    }
+    return
+  }
+
+  // 需要改帧：按空行切分事件，只在 message_delta 上动一次
+  const decoder = new TextDecoder()
+  const encoder = new TextEncoder()
+  let pending = ''
+  let injected = false
+  const write = async (text) => {
+    if (res.writableEnded) return
+    if (!res.write(encoder.encode(text))) {
+      await new Promise((r) => res.once('drain', r))
+    }
+  }
   try {
     for await (const chunk of upstream.body) {
       if (res.writableEnded) break
-      if (!res.write(chunk)) {
-        await new Promise((r) => res.once('drain', r))
+      pending += decoder.decode(chunk, { stream: true })
+      let cut = pending.indexOf('\n\n')
+      while (cut >= 0) {
+        const event = pending.slice(0, cut + 2)
+        pending = pending.slice(cut + 2)
+        cut = pending.indexOf('\n\n')
+        if (!injected && event.includes('"type":"message_delta"')) {
+          injected = true
+          let title = null
+          try {
+            title = await Promise.race([
+              titlePromise,
+              new Promise((resolve) => setTimeout(() => resolve(null), 4000)),
+            ])
+          } catch {
+            title = null
+          }
+          await write(title ? withTitle(event, title) : event)
+          continue
+        }
+        await write(event)
       }
     }
+    if (pending) await write(pending)
   } catch (err) {
     if (err?.name !== 'AbortError') log('  上游流中断:', err.message)
   } finally {
     if (!res.writableEnded) res.end()
   }
+}
+
+/** 在 message_delta 的 data 行里写入 delta.title，其余字节保持原样 */
+function withTitle(event, title) {
+  return event.replace(/^data: (.+)$/m, (line, json) => {
+    try {
+      const payload = JSON.parse(json)
+      if (payload?.type !== 'message_delta' || !payload.delta) return line
+      payload.delta.title = title
+      return `data: ${JSON.stringify(payload)}`
+    } catch {
+      return line
+    }
+  })
 }
 
 async function readBody(req) {
@@ -609,7 +687,14 @@ async function handleMessages(req, res) {
     return res.end(text)
   }
 
-  await pipeUpstream(upstreamRes, res)
+  // OCGO 不接受 title 参数：标题改在转发阶段合成，客户端仍从 message_delta 读
+  const wantTitle = CFG.titleStrategy === 'first-turn-official' && !!body.title?.enabled
+  const titlePromise =
+    provider.platform === 'ocgo' && wantTitle
+      ? titleFrom(provider, key, lastUserText(body))
+      : undefined
+
+  await pipeUpstream(upstreamRes, res, { titlePromise })
 }
 
 /**
