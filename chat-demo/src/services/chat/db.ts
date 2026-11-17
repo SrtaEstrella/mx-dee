@@ -183,44 +183,6 @@ export const deleteSession = async (sessionId: string): Promise<void> => {
   ])
 }
 
-/**
- * 摘要缓存迁移：列表只读 sessionSummaries，而摘要是写入时算出来的派生数据。
- * 旧版本写入的摘要没有后加的字段（如 pinned），这些会话在重新保存前会一直显示为未置顶，
- * 这里按字段缺失找出旧摘要，从会话本身重算一次。
- */
-export const refreshStaleSummaries = async (): Promise<number> => {
-  const tx = (await getDB()).transaction(['sessions', 'sessionSummaries'], 'readwrite')
-  let updated = 0
-  await Promise.all([
-    (async () => {
-      try {
-        const summaries = tx.objectStore('sessionSummaries')
-        const sessions = tx.objectStore('sessions')
-        for (
-          let cursor = await summaries.openCursor();
-          cursor;
-          cursor = await cursor.continue()
-        ) {
-          if (typeof cursor.value.pinned === 'boolean') {
-            continue
-          }
-          const session = await sessions.get(cursor.value.id)
-          if (!session) {
-            continue
-          }
-          await summaries.put(storedSummary(session))
-          updated += 1
-        }
-      } catch (error) {
-        abortTransaction(tx)
-        throw error
-      }
-    })(),
-    tx.done,
-  ])
-  return updated
-}
-
 const putFiles = async (store: 'files' | 'filesStaging', files: StoredFile[]) => {
   const tx = (await getDB()).transaction(store, 'readwrite')
   await Promise.all([...files.map((file) => tx.store.put(file)), tx.done])

@@ -127,5 +127,5 @@ export const toSessionSummary = (session: SessionSummary): SessionSummary => ({
   title: session.title,
   createdAt: session.createdAt,
   updatedAt: session.updatedAt,
-  pinned: !!session.pinned,
+  ...(session.pinned ? { pinned: true } : {}),
 })
