@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # 构建 chat-demo 的静态产物。
 #
 # 上游 build 脚本是 `rm -rf dist && NODE_ENV=production rspack build -c rspack.config.ts`。

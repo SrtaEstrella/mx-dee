@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand'
+import { create } from 'zustand'
 import { createId } from '../../utils/id.js'
 import { ApiError, streamMessage } from '../api/client.js'
 import type { ChatModel, CreateMessageRequest } from '../api/types.js'
@@ -35,8 +35,8 @@ import {
 
 /** deepseek-flash 同时支持深度思考与图片输入 */
 const MODEL: ChatModel = 'deepseek-flash'
-/** 所有生成请求统一携带的助手身份说明 */
-const SYSTEM_PROMPT = '该助手为DeepSeek，由深度求索公司创造。'
+/** 所有生成请求统一携带的身份说明 */
+const SYSTEM_PROMPT = '你是一个乐于助人的 AI 助手。'
 
 /** 固定身份句之后追加用户自己的指令；两者之间空一行，便于模型区分 */
 const buildSystemPrompt = (instructions: string) => {

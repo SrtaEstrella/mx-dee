@@ -1,5 +1,5 @@
-# Launch DS-Chat: start the gateway in the background (if not already running),
-# then open it in the browser. Started by DS-Chat.vbs, which hides the console.
+﻿# Launch Profunda: start the gateway in the background (if not already running),
+# then open it in the browser. Started by Profunda.vbs, which hides the console.
 #
 # ASCII only: Windows PowerShell parses .ps1 files without a UTF-8 BOM as ANSI.
 #
@@ -46,7 +46,7 @@ function Show-Message([string]$Text) {
   Write-LaunchLog "MESSAGE: $Text"
   try {
     Add-Type -AssemblyName System.Windows.Forms
-    [void][System.Windows.Forms.MessageBox]::Show($Text, 'DS-Chat')
+    [void][System.Windows.Forms.MessageBox]::Show($Text, 'Profunda')
   } catch {
     Write-Host $Text
   }

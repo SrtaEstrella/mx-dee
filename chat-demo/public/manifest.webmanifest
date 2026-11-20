@@ -1,6 +1,6 @@
 {
-  "name": "DS-Chat",
-  "short_name": "DS-Chat",
+  "name": "Profunda",
+  "short_name": "Profunda",
   "description": "本地运行的对话客户端",
   "lang": "zh-CN",
   "start_url": "./",

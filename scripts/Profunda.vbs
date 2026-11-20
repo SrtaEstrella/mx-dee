@@ -1,4 +1,4 @@
-' DS-Chat 静默启动器：不弹控制台窗口，交给 launch.ps1 完成启动与打开浏览器。
+' Profunda 静默启动器：不弹控制台窗口，交给 launch.ps1 完成启动与打开浏览器。
 Option Explicit
 
 Dim fso, shell, scriptDir, q, command, rc
@@ -13,5 +13,5 @@ command = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File " _
 On Error Resume Next
 rc = shell.Run(command, 0, False)
 If Err.Number <> 0 Then
-  shell.Popup "DS-Chat failed to launch: " & Err.Description, 0, "DS-Chat", 16
+  shell.Popup "Profunda failed to launch: " & Err.Description, 0, "Profunda", 16
 End If
