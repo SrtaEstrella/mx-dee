@@ -172,7 +172,7 @@ function bootstrapProviders() {
   if (officialKey) {
     list.push({
       id: 'official-default',
-      name: '官方 API',
+      name: 'DeepSeek API',
       platform: 'official',
       baseURL: OFFICIAL_BASE,
       apiKey: officialKey,
@@ -537,19 +537,19 @@ async function handleMessages(req, res) {
         reasons = ['指定 provider（网关内执行官方搜索）', ...forcedReasons]
       } else if (official && providerKey(official)) {
         provider = official
-        reasons = ['指定 provider 无服务端工具，回落工具通道', ...forcedReasons]
+        reasons = ['指定 provider 无服务端工具，改用 DeepSeek API', ...forcedReasons]
       } else if (hasAttachmentBlock(body)) {
         // 附件需要官方通道做版面解析，没有官方时明确报错，不静默丢内容
         return sendJson(res, 400, {
           error: {
             type: 'attachment_needs_official',
-            message: '当前没有可用的官方 API，无法解析该附件',
+            message: '当前没有可用的 DeepSeek API，无法解析该附件',
           },
         })
       } else {
         // 没有官方通道时，联网与标题静默降级：仍用选中的 provider 作答
         provider = requestedProvider
-        reasons = ['无官方工具通道，已忽略联网', ...forcedReasons]
+        reasons = ['无 DeepSeek 工具通道，已忽略联网', ...forcedReasons]
         degradeTools = true
       }
     }
@@ -562,13 +562,13 @@ async function handleMessages(req, res) {
       return sendJson(res, 400, {
         error: {
           type: 'attachment_needs_official',
-          message: '当前没有可用的官方 API，无法解析该附件',
+          message: '当前没有可用的 DeepSeek API，无法解析该附件',
         },
       })
     } else {
       // 只有 OCGO 时联网无通道可用：降级为普通请求
       provider = defaultProvider()
-      reasons = ['无官方工具通道，已忽略联网', ...forcedReasons]
+      reasons = ['无 DeepSeek 工具通道，已忽略联网', ...forcedReasons]
       degradeTools = true
     }
   } else {
@@ -635,7 +635,7 @@ async function handleMessages(req, res) {
     // 附件无法转换：本轮改由官方整轮处理
     provider = officialForHybrid
     reasons = [
-      '附件无法在混合模式处理，回落工具通道',
+      '附件无法在混合模式处理，改由 DeepSeek API 整轮处理',
       ...reasons.filter((r) => !r.includes('网关内执行')),
     ]
   }
