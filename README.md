@@ -108,7 +108,7 @@ Windows 环境可双击 `scripts\Profunda.vbs`：在后台启动网关，待健�
 
 ### 配置
 
-- 服务商与密钥：`config/providers.json`（不入库）。
+- 服务商与密钥：`config/providers.json`，保存在本机，由 `.gitignore` 排除，不会进入版本库。
 - 端口：可在设置中修改，写入 `config/app.json`，重启网关后生效。
 - 网关不校验前端传入的占位密钥，鉴权由服务商密钥承担。
 
@@ -120,7 +120,7 @@ gateway/hybrid.mjs         混合模式：模型生成与工具调用合成
 gateway/attachments.mjs    附件转换：缓存上传字节并按通道改写内容块
 chat-demo/                 前端源码（在上游基础上修改）
 scripts/                   启动、停止、构建与快捷方式
-config/                    本地服务商配置（不入库）
+config/                    本机配置：服务商与密钥、端口
 ```
 
 ## 限制与已知行为
