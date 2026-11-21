@@ -1,6 +1,9 @@
 # Profunda Chat
 
-本项目在 [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo)（MIT）的前端与模型服务之间增加一层本地网关，用于将模型推理与服务端工具拆分到不同的通道。
+本项目以 [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo)（MIT）为前端基础，在其上增加两类内容：
+
+- **本地网关**：位于前端与模型服务之间，将模型推理与服务端工具拆分到不同通道，并按请求内容自动选择；
+- **业务功能增补**：服务商管理与会话级模型选择、会话置顶与批量操作、跨会话与单会话搜索、长会话分页渲染、历史对话导入导出的筛选与合并、界面与请求参数设置。
 
 ## 概述
 
