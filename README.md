@@ -1,6 +1,6 @@
 # Profunda Chat
 
-本项目以 [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo)（MIT）为前端基础，在其上增加两类内容：
+本项目以 [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo)（MIT）为前端基础，并在此基础上增加两类内容：
 
 - **本地网关**：位于前端与模型服务之间，将模型推理与服务端工具拆分到不同通道，并按请求内容自动选择；
 - **业务功能增补**：服务商管理与会话级模型选择、会话置顶与批量操作、跨会话与单会话搜索、长会话分页渲染、历史对话导入导出的筛选与合并、界面与请求参数设置。
@@ -13,7 +13,7 @@
 - 联网搜索、网页抓取、附件解析与标题生成由 DeepSeek API 提供；
 - 前端不感知通道差异，接收到的始终是同一种内容块流。
 
-采用上述双通道拆分，需要同时具备模型通道与 DeepSeek API 密钥。
+双通道拆分要求同时具备模型通道与 DeepSeek API 密钥。
 
 ## 架构
 
@@ -66,7 +66,7 @@
 
 - 网关端口。
 - 消息区宽度与正文字号（以档位呈现）。
-- 自定义指令：追加于固定身份说明之后，适用于其后的所有请求。
+- 自定义指令：追加于固定身份说明之后，对之后发出的所有请求生效。
 
 ### 首次运行
 
@@ -87,7 +87,7 @@ cd chat-demo && pnpm install && cd ..
 MSYS_NO_PATHCONV=1 DS_CHAT_API_ORIGIN=/api bash scripts/build.sh
 ```
 
-`DS_CHAT_API_ORIGIN` 指定前端请求的 API 前缀。未设置时使用上游默认值 `https://api.deepseek.com`，前端将绕过本地网关；部署本项目时必须设置为 `/api`。`scripts/check.sh` 已包含该参数，可用于类型检查与构建。
+`DS_CHAT_API_ORIGIN` 指定前端请求的 API 前缀。未设置时使用上游默认值 `https://api.deepseek.com`，构建产物会直接请求该地址，不经过网关；通过本项目部署时，应将其设为 `/api`。`scripts/check.sh` 已包含该变量，可用于类型检查与构建。
 
 构建产物输出至 `chat-demo/dist`，由网关托管。
 
