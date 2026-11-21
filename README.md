@@ -134,10 +134,12 @@ config/                    本地服务商配置（不入库）
 
 基于 `deepseek-ai/chat-demo` v0.1.1（`5d5dd75`）。协议解析、内容块渲染、主题与交互沿用上游；本仓库改动集中于网关、服务商管理、会话数据与会话页渲染。
 
-上游历史保留在 `.upstream/chat-demo.git`（不入库），可用于对比：
+与上游的差异可通过添加远端后对比：
 
 ```bash
-git --git-dir=.upstream/chat-demo.git --work-tree=chat-demo diff
+git remote add upstream https://github.com/deepseek-ai/chat-demo.git
+git fetch upstream
+git diff 5d5dd75..HEAD
 ```
 
 许可沿用上游 MIT，见 `chat-demo/LICENSE`。
