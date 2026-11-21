@@ -1,4 +1,4 @@
-# Stop the Profunda gateway started by launch.ps1.
+# Stop the Mx. Dee gateway started by launch.ps1.
 #
 # Only processes whose command line contains server.mjs are stopped; another
 # program listening on the same port is left alone.
@@ -17,11 +17,11 @@ foreach ($listener in $listeners) {
   $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$($listener.OwningProcess)" -ErrorAction SilentlyContinue
   if ($proc -and $proc.CommandLine -match 'server\.mjs') {
     Stop-Process -Id $listener.OwningProcess -Force
-    Write-Host "Stopped Profunda gateway (PID $($listener.OwningProcess))"
+    Write-Host "Stopped Mx. Dee gateway (PID $($listener.OwningProcess))"
     $stopped++
   }
 }
 
 if ($stopped -eq 0) {
-  Write-Host "No Profunda gateway found on port $Port."
+  Write-Host "No Mx. Dee gateway found on port $Port."
 }

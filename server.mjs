@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Profunda 本地网关与静态服务器。
+ * Mx. Dee 本地网关与静态服务器。
  *
  * 托管 chat-demo 的构建产物，并把 /api/* 的请求按能力分发到上游：
  *   deepseek_web_search、deepseek_read_url + 链接、image/document 块、title 生成
@@ -1037,7 +1037,7 @@ server.listen(CFG.port, CFG.host, async () => {
   await loadRegistry()
   const line = '─'.repeat(60)
   console.log(line)
-  console.log(`Profunda 网关  http://${CFG.host}:${CFG.port}`)
+  console.log(`Mx. Dee 网关  http://${CFG.host}:${CFG.port}`)
   console.log(`  静态产物  ${CFG.root}`)
   console.log(`  配置      ${CFG.configPath}`)
   console.log(`  路由模式  ${CFG.route} ｜ 标题策略 ${CFG.titleStrategy} ｜ safety_check ${CFG.stripSafety ? '屏蔽' : '保留'}`)

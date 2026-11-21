@@ -1,4 +1,4 @@
-# Profunda Chat
+# Mx. Dee
 
 本项目以 [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo)（MIT）为前端基础，并在此基础上增加两类内容：
 
@@ -93,7 +93,7 @@ MSYS_NO_PATHCONV=1 DS_CHAT_API_ORIGIN=/api bash scripts/build.sh
 
 ### 启动
 
-Windows 环境可双击 `scripts\Profunda.vbs`：在后台启动网关，待健康检查通过后以应用窗口打开界面。
+Windows 环境可双击 `scripts\MxDee.vbs`：在后台启动网关，待健康检查通过后以应用窗口打开界面。
 
 其他入口：
 

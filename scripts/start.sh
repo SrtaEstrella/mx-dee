@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 启动 Profunda 网关
+# 启动 Mx. Dee 网关
 #
 # Git Bash / WSL 会继承 Windows 用户环境变量，可直接读到 Key。
 # DSH 内启动的 shell 不继承密钥变量，那种环境下用 start.ps1。
