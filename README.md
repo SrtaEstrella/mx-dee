@@ -1,43 +1,143 @@
 # Profunda Chat
 
-DS-Chat 的个人自用版本：把 DeepSeek 网页版前端（[deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo)，MIT）接上本地网关，实现「模型 token 走 OpenCode Go 订阅、联网搜索与附件解析走 DeepSeek 官方接口」的双轨路由。
+本项目在 [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo)（MIT）的前端与模型服务之间增加一层本地网关，用于将模型推理与服务端工具拆分到不同的通道。
 
-## 结构
+## 概述
+
+上游前端直接调用单一 API，模型推理与联网搜索、附件解析等能力由同一服务提供。本项目引入网关后：
+
+- 模型推理可交由按订阅计费的通道承担；
+- 联网搜索、网页抓取、附件解析与标题生成由 DeepSeek API 提供；
+- 前端不感知通道差异，接收到的始终是同一种内容块流。
+
+该拆分适用于同时持有订阅额度与官方 API 密钥、且希望将两类开销分别结算的场景。
+
+## 架构
 
 ```
-server.mjs                 本地网关：静态托管 + /api/* 路由
-gateway/hybrid.mjs         混合执行：OCGO 生成 + 官方搜索/抓取
-gateway/attachments.mjs    附件中转：上传字节缓存 → base64 / 文本
-chat-demo/                 官方前端源码（已按本项目的需要修改）
-scripts/                   启动、停止、构建与快捷方式脚本
-assets/                    图标
+浏览器 (chat-demo 前端)
+        │  /api/anthropic/v1/*
+        ▼
+本地网关 server.mjs ──► 模型通道 (OpenCode Go 及兼容服务)
+        │
+        └──────────────► 工具通道 (DeepSeek API：搜索、抓取、文件解析)
 ```
 
-## 启动
+网关按请求内容选择通道，前端无需配置：
 
-双击 `scripts\DS-Chat.vbs`（无窗口），或 `bash scripts/start.sh`。网关默认监听 `http://127.0.0.1:8090`。
-
-| 脚本 | 作用 |
+| 请求特征 | 处理方式 |
 | --- | --- |
-| `scripts\DS-Chat.vbs` | 静默启动（不弹控制台）并打开浏览器 |
-| `scripts\launch.ps1` | 后台拉起网关、等待健康检查、打开页面 |
-| `scripts\start.ps1` | 前台运行网关，自动从用户环境变量注入密钥 |
-| `scripts\start.sh` | 同上，Git Bash 用 |
-| `scripts\stop.ps1` | 停止网关（只结束命令行含 `server.mjs` 的进程） |
+| 纯对话 | 使用会话指定的服务商直接请求 |
+| 需要联网搜索或读取链接 | 混合模式：模型仍由指定服务商生成，搜索与抓取由网关调用 DeepSeek 工具 API，结果合成为 `server_tool_use`、`web_search_tool_result`、`citations_delta` 等内容块后转发 |
+| 含需要版面解析的文档（Word、PPT 等） | 整轮转由工具通道处理 |
+| 含图片或 PDF | 就地转换为模型可直接读取的附件块 |
+| 继续生成（assistant 前缀续写） | 固定使用工具通道 |
+
+工具通道不可用时，网关执行降级：联网能力被忽略并在界面说明；含需解析文档的请求直接返回错误，不丢弃附件内容。
+
+## 功能
+
+### 服务商管理
+
+- 可添加多个服务商（DeepSeek API 或 OpenCode Go 兼容服务），支持修改密钥、接口地址与刷新模型列表。
+- 每个服务商可设为默认，或设为工具通道（用于搜索、抓取与附件解析）。
+- 每个会话可单独指定服务商与模型，不继承全局设置。
+- 首次运行自动写入一个显式默认服务商，避免请求缺少通道标识。
+
+### 会话
+
+- 置顶：置顶会话单独成组，数量超过 10 个时支持折叠。
+- 批量操作：支持批量置顶、取消置顶与删除，单次上限 99 个。
+- 搜索：支持跨会话检索标题与正文，以及单个会话内的消息检索与定位。
+- 轮次导航：按提问生成刻度，悬停展开标题，点击跳转。
+- 长会话分页渲染：仅渲染末尾一页，向上滚动时按页补齐，降低长会话的打开与滚动开销。
+
+### 历史数据
+
+- 支持导入 DeepSeek 导出的历史对话，可按轮次下限、最近活跃天数、是否包含图片筛选，多个条件取交集。
+- 导入支持合并（保留现有会话）与替换两种模式，过程中显示进度。
+- 导出支持剔除附件、按轮次筛选。
+- 置顶状态随导出与导入保留。
+
+### 设置
+
+- 网关端口。
+- 消息区宽度与正文字号（以档位呈现）。
+- 自定义指令：追加于固定身份说明之后，适用于其后的所有请求。
+
+### 首次运行
+
+未配置任何可用 API 时，界面直接进入添加服务商的引导，不进入对话流程。
+
+## 部署与运行
+
+### 前置条件
+
+- Node.js（开发与验证使用 20.x）
+- pnpm
+- 至少一个通道的密钥：`DEEPSEEK_API_KEY`（工具通道）或 `OCGO_API_KEY`（模型通道）
+
+### 构建
+
+```bash
+cd chat-demo && pnpm install && cd ..
+MSYS_NO_PATHCONV=1 DS_CHAT_API_ORIGIN=/api bash scripts/build.sh
+```
+
+`DS_CHAT_API_ORIGIN` 指定前端请求的 API 前缀。未设置时使用上游默认值 `https://api.deepseek.com`，前端将绕过本地网关；部署本项目时必须设置为 `/api`。`scripts/check.sh` 已包含该参数，可用于类型检查与构建。
+
+构建产物输出至 `chat-demo/dist`，由网关托管。
+
+### 启动
+
+Windows 环境可双击 `scripts\Profunda.vbs`：在后台启动网关，待健康检查通过后以应用窗口打开界面。
+
+其他入口：
+
+| 脚本 | 说明 |
+| --- | --- |
+| `scripts\launch.ps1` | 后台启动网关并打开界面；`-NoBrowser` 仅启动，`-Port` 覆盖端口 |
+| `scripts\start.ps1` | 前台运行网关，从用户环境变量注入密钥 |
+| `scripts\start.sh` | 同上，适用于 Git Bash / WSL |
+| `scripts\stop.ps1` | 停止网关（仅结束命令行包含 `server.mjs` 的进程） |
 | `scripts\build.sh` | 构建前端产物 |
-| `scripts\check.sh` | 类型检查 + 构建，改完前端代码后跑一次 |
-| `scripts\make-shortcut.ps1` | 创建桌面 / 开机启动快捷方式（`-Startup`） |
+| `scripts\check.sh` | 类型检查与构建 |
+| `scripts\make-shortcut.ps1` | 创建桌面快捷方式；`-Startup` 同时写入开机启动项 |
 
-配置见 `.env.local.example`，密钥只存在 `config/providers.json`（不入库）。
+默认监听 `http://127.0.0.1:8090`。
 
-## 文档
+### 配置
 
-调研与实现文档只保存在本地 `docs/`（含真实使用细节，不入库）。
+- 服务商与密钥：`config/providers.json`（不入库）。
+- 端口：可在设置中修改，写入 `config/app.json`，重启网关后生效。
+- 网关不校验前端传入的占位密钥，鉴权由服务商密钥承担。
 
-## 上游对照
+## 目录结构
 
-上游历史保留在 `.upstream/chat-demo.git`（不纳入版本库），基于 `5d5dd75`（v0.1.1）。对比改动：
+```
+server.mjs                 网关：静态托管、请求路由、通道选择
+gateway/hybrid.mjs         混合模式：模型生成与工具调用合成
+gateway/attachments.mjs    附件转换：缓存上传字节并按通道改写内容块
+chat-demo/                 前端源码（在上游基础上修改）
+scripts/                   启动、停止、构建与快捷方式
+config/                    本地服务商配置（不入库）
+```
+
+## 限制与已知行为
+
+- 仅有模型通道时无法联网：搜索能力由 DeepSeek 工具 API 提供，网关不实现本地抓取。
+- 需要版面解析的文档依赖工具通道；图片与 PDF 不受此限制。
+- 模型通道偶发不返回思考块属于上游行为，网关不做补发或重试。
+- 系统为单用户本地部署：会话与附件存放于浏览器 IndexedDB，不提供服务端存储与多用户隔离。
+
+## 上游与许可
+
+基于 `deepseek-ai/chat-demo` v0.1.1（`5d5dd75`）。协议解析、内容块渲染、主题与交互沿用上游；本仓库改动集中于网关、服务商管理、会话数据与会话页渲染。
+
+上游历史保留在 `.upstream/chat-demo.git`（不入库），可用于对比：
 
 ```bash
 git --git-dir=.upstream/chat-demo.git --work-tree=chat-demo diff
 ```
+
+许可沿用上游 MIT，见 `chat-demo/LICENSE`。
