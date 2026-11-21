@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # 启动 Profunda 网关
 #
 # Git Bash / WSL 会继承 Windows 用户环境变量，可直接读到 Key。

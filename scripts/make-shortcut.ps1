@@ -1,4 +1,4 @@
-﻿# Create Windows shortcuts for Profunda.
+# Create Windows shortcuts for Profunda.
 #
 #   -Startup  also place a shortcut in the Startup folder, so the gateway is up
 #             after logon and the installed PWA opens instantly.

@@ -1,4 +1,4 @@
-﻿# Start the Profunda gateway (static site + dual-track API router).
+# Start the Profunda gateway (static site + dual-track API router).
 #
 # DEEPSEEK_API_KEY / OCGO_API_KEY live only in the "User" environment scope, and
 # shells launched from DSH do not inherit them. This script reads them from that

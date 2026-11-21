@@ -1,4 +1,4 @@
-﻿# Stop the Profunda gateway started by launch.ps1.
+# Stop the Profunda gateway started by launch.ps1.
 #
 # Only processes whose command line contains server.mjs are stopped; another
 # program listening on the same port is left alone.

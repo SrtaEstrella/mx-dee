@@ -1,4 +1,4 @@
-﻿# Launch Profunda: start the gateway in the background (if not already running),
+# Launch Profunda: start the gateway in the background (if not already running),
 # then open it in the browser. Started by Profunda.vbs, which hides the console.
 #
 # ASCII only: Windows PowerShell parses .ps1 files without a UTF-8 BOM as ANSI.
