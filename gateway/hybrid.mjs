@@ -21,6 +21,8 @@ const FETCH_TIMEOUT = 20_000
 const SEARCH_COUNT = 8
 /** 回传给模型的单页正文上限 */
 const FETCH_TEXT_LIMIT = 20_000
+/** 客户端未指定输出上限时的默认值；按实际输出计费，上限只防截断 */
+const DEFAULT_MAX_TOKENS = 65_536
 
 const sse = (res, event, data) => {
   res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
@@ -617,7 +619,7 @@ export async function runHybrid({
         },
         body: JSON.stringify({
           model,
-          max_tokens: body.max_tokens ?? 4096,
+          max_tokens: body.max_tokens ?? DEFAULT_MAX_TOKENS,
           stream: true,
           ...(body.thinking ? { thinking: body.thinking } : {}),
           system,

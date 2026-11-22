@@ -53,6 +53,8 @@ const buildSystemPrompt = (instructions: string) => {
 const SESSION_CACHE_LIMIT = 5
 /** 安全审核固定开启，所有请求都走扩展模式 */
 const SAFETY_CHECK = { level: 'high' } as const
+/** 单轮输出上限（含思考）；只按实际输出计费，设大值避免长回答被截断 */
+const MAX_OUTPUT_TOKENS = 65_536
 /** 服务端判定 file_id 失效后，重新补传并重发的最多次数（不含首次请求） */
 const FILE_RETRY_LIMIT = 2
 /** 退避基数，第 n 次重试等待 2^n 倍；连续失败达到上限就放弃，把原始报错展示出来 */
@@ -1080,6 +1082,8 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
             model: initial.model ?? MODEL,
             system: buildSystemPrompt(useSettings.getState().customInstructions),
             messages,
+            // 输出上限按实际用量计费，取较大值避免长回答被截断
+            max_tokens: MAX_OUTPUT_TOKENS,
             thinking: { type: initial.thinking ? 'enabled' : 'disabled' },
             safety_check: SAFETY_CHECK,
             tools: serverTools(initial.search ?? false),
