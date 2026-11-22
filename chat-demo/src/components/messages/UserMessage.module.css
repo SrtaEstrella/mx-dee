@@ -79,6 +79,49 @@
   overflow: hidden;
 }
 
+/* 编辑态附件：与消息里的附件同尺寸，右上角提供移除 */
+.editFiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 16px 0;
+}
+
+.editFile {
+  position: relative;
+}
+
+/* 编辑态附件：卡片右上角的移除按钮与输入框里的附件卡保持一致 */
+.editFileRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: var(--dsw-alias-label-primary-inverted);
+  background-color: var(--dsw-alias-button-contrast-fill);
+  filter: drop-shadow(0 0 0.5px rgba(0, 0, 0, 0.2));
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--ds-transition-duration) var(--ds-ease-in-out);
+}
+
+.editFile:hover .editFileRemove,
+.editFileRemove:focus-visible {
+  opacity: 1;
+}
+
+.fileInput {
+  display: none;
+}
+
 .textarea {
   display: block;
   width: 100%;

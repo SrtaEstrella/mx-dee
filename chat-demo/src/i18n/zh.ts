@@ -215,6 +215,7 @@ export const zh = {
   uploadUnsupportedFormat:
     '上传的文件包含暂未支持的文件格式，请转换文件格式后重试。支持 PDF、DOC、XLSX、PPT、图片、文本、代码等。',
   uploadFileStatusFailed: '上传失败',
+  addAttachment: '添加附件',
   uploadRetry: '{message}，点击重试',
   chatInputPlaceholderChat: '请输入消息',
   deactivatedThinkTooltip: '先思考后回答，解决推理问题',

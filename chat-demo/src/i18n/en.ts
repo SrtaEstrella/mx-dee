@@ -224,6 +224,7 @@ export const en = {
   uploadUnsupportedFormat:
     'The selected files include unsupported formats. Please convert them and try again. Supported: PDF, DOC, XLSX, PPT, images, text, code, and more.',
   uploadFileStatusFailed: 'Upload failed',
+  addAttachment: 'Add attachment',
   uploadRetry: '{message}. Click to retry',
   chatInputPlaceholderChat: 'Enter a message',
   deactivatedThinkTooltip: 'Think before responding to solve reasoning problems',

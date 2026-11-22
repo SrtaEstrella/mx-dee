@@ -2,11 +2,22 @@ import { useTranslate } from '../../i18n/index.js'
 import clsx from 'clsx'
 import { memo, useLayoutEffect, useRef, useState } from 'react'
 import { useIsMobile } from '../../app/viewport.js'
-import { IconEditOutline16 } from '../base/icons.js'
-import { getFileViewType, isImage } from '../../services/attachments.js'
+import { IconCloseFill14, IconEditOutline16, IconPaperclipOutline16 } from '../base/icons.js'
+import {
+  ACCEPT,
+  cancelUpload,
+  getFileViewType,
+  isImage,
+  resolveMimeType,
+  uploadAttachment,
+  validateFiles,
+} from '../../services/attachments.js'
 import { editMessage, retryUpload } from '../../services/chat/store.js'
+import { useSettings } from '../../services/settings.js'
+import { createId } from '../../utils/id.js'
+import { showToast } from '../base/toastState.js'
 import { stopReadAloud } from '../../services/speech/readAloud.js'
-import type { UserMessage as UserMessageType } from '../../services/chat/types.js'
+import type { FileAttachment, UserMessage as UserMessageType } from '../../services/chat/types.js'
 import { Button } from '../base/Button.js'
 import { IconButton } from '../base/IconButton.js'
 import { ensureApiKey } from '../settings/settingsDialogState.js'
@@ -42,9 +53,44 @@ export const UserMessage = memo(function UserMessage({
   const t = useTranslate()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(message.content)
+  /** 编辑态下的附件：包含原有附件与新增（上传中）的附件 */
+  const [files, setFiles] = useState<FileAttachment[]>(message.files)
+  const [sending, setSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  /** 新增附件的上传任务：id → 上传结果 */
+  const uploadsRef = useRef(new Map<string, Promise<string>>())
   const isMobile = useIsMobile()
-  const canSend = !busy && (draft.trim() !== '' || message.files.length > 0)
+  const canSend = !busy && !sending && (draft.trim() !== '' || files.length > 0)
+
+  /** 新增附件：整批校验通过后加入编辑态并立即上传 */
+  const addFiles = (incoming: File[]) => {
+    if (incoming.length === 0) {
+      return
+    }
+    const error = validateFiles(incoming, files.length)
+    if (error) {
+      showToast(error)
+      return
+    }
+    const apiKey = useSettings.getState().apiKey ?? ''
+    const added = incoming.map((file) => {
+      const id = createId()
+      const mimeType = resolveMimeType(file)
+      const image = isImage(mimeType)
+      uploadsRef.current.set(id, uploadAttachment(apiKey, id, file, file.name, image))
+      return { id, serverId: null, name: file.name, size: file.size, isImage: image, mimeType }
+    })
+    setFiles((previous) => [...previous, ...added])
+  }
+
+  const removeFile = (id: string) => {
+    if (uploadsRef.current.has(id)) {
+      cancelUpload(id)
+      uploadsRef.current.delete(id)
+    }
+    setFiles((previous) => previous.filter((file) => file.id !== id))
+  }
 
   // 进入编辑时把光标放到文本末尾：autoFocus 只负责聚焦，插入点默认在开头
   useLayoutEffect(() => {
@@ -68,16 +114,55 @@ export const UserMessage = memo(function UserMessage({
     }
   }, [editing, draft])
 
-  const sendEdit = () => {
-    if (canSend && ensureApiKey() && editMessage(sessionId, message.id, draft.trim())) {
-      stopReadAloud()
-      setEditing(false)
+  const sendEdit = async () => {
+    if (!canSend) {
+      return
     }
+    setSending(true)
+    try {
+      // 等新增附件上传完成；任一失败则不发，保留编辑态让用户重试或删除
+      const resolved = await Promise.all(
+        files.map(async (file) => {
+          if (file.serverId) {
+            return file
+          }
+          const pending = uploadsRef.current.get(file.id)
+          if (!pending) {
+            return null
+          }
+          try {
+            return { ...file, serverId: await pending }
+          } catch {
+            return null
+          }
+        })
+      )
+      if (resolved.some((file) => file === null)) {
+        showToast({ key: 'uploadFileStatusFailed' })
+        return
+      }
+      if (!ensureApiKey()) {
+        return
+      }
+      if (editMessage(sessionId, message.id, draft.trim(), resolved as FileAttachment[])) {
+        stopReadAloud()
+        setEditing(false)
+        uploadsRef.current.clear()
+      }
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const startEditing = () => {
+    setDraft(message.content)
+    setFiles(message.files)
+    setEditing(true)
   }
 
   return (
     <div className={clsx(styles.container, isFirst && styles.isFirst)} data-message-id={message.id}>
-      {message.files.length > 0 ? (
+      {!editing && message.files.length > 0 ? (
         <div
           className={clsx(
             styles.files,
@@ -96,6 +181,23 @@ export const UserMessage = memo(function UserMessage({
       ) : null}
       {editing ? (
         <div className={styles.editor}>
+          {files.length > 0 ? (
+            <div className={styles.editFiles}>
+              {files.map((file) => (
+                <div key={file.id} className={styles.editFile}>
+                  <MessageFile file={file} onRetry={null} />
+                  <button
+                    type="button"
+                    className={styles.editFileRemove}
+                    aria-label={t('delete')}
+                    onClick={() => removeFile(file.id)}
+                  >
+                    <IconCloseFill14 />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <textarea
             ref={textareaRef}
             className={styles.textarea}
@@ -103,8 +205,15 @@ export const UserMessage = memo(function UserMessage({
             autoFocus
             rows={1}
             value={draft}
-            disabled={busy}
+            disabled={busy || sending}
             onChange={(event) => setDraft(event.target.value)}
+            onPaste={(event) => {
+              const pasted = [...event.clipboardData.files]
+              if (pasted.length > 0) {
+                event.preventDefault()
+                addFiles(pasted)
+              }
+            }}
             onKeyDown={(event) => {
               if (event.nativeEvent.isComposing) {
                 return
@@ -113,15 +222,33 @@ export const UserMessage = memo(function UserMessage({
                 setEditing(false)
               } else if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !isMobile) {
                 event.preventDefault()
-                sendEdit()
+                void sendEdit()
               }
             }}
           />
           <div className={styles.editorActions}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={ACCEPT}
+              className={styles.fileInput}
+              onChange={(event) => {
+                addFiles([...(event.target.files ?? [])])
+                event.target.value = ''
+              }}
+            />
+            <IconButton
+              icon={<IconPaperclipOutline16 />}
+              tooltip={t('addAttachment')}
+              tooltipPlacement="top"
+              disabled={busy || sending}
+              onClick={() => fileInputRef.current?.click()}
+            />
             <Button size="s" variant="outlined" onClick={() => setEditing(false)}>
               {t('cancel')}
             </Button>
-            <Button size="s" disabled={!canSend} onClick={sendEdit}>
+            <Button size="s" disabled={!canSend} onClick={() => void sendEdit()}>
               {t('send')}
             </Button>
           </div>
@@ -138,8 +265,7 @@ export const UserMessage = memo(function UserMessage({
                 tooltipPlacement="bottom"
                 disabled={busy}
                 onClick={() => {
-                  setDraft(message.content)
-                  setEditing(true)
+                  startEditing()
                 }}
               />
             </div>
